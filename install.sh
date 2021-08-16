@@ -161,7 +161,8 @@ chown -R www-data:www-data /var/www/dashboard/*
 #### Create Queue Worker ####
 cd /etc/systemd/system || exit
 curl -o /etc/systemd/system/dashboard.service $GITHUB_BASE_URL/configs/dashboard.service
-systemctl enable --now dashboard.service
+systemctl enable dashboard.service
+systemctl start dashboard.service
 
 #### Config Cronjob ####
 
@@ -178,3 +179,18 @@ insert_cronjob() {
 
 #### Exec Cronjob ####
 insert_cronjob
+
+#### Enable All Services ####
+
+systemctl enable nginx
+systemctl enable mariadb
+systemctl enable redis
+systemctl enable php-fpm
+
+#### Start All Services ####
+
+systemctl start nginx
+systemctl start mariadb
+systemctl start redis
+systemctl start php-fpm
+
