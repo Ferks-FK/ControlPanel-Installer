@@ -12,7 +12,6 @@ MYSQL_USER="admin"
 MYSQL_PASS="dashboardpass"
 GITHUB_SOURCE="master"
 GITHUB_BASE_URL="https://raw.githubusercontent.com/Ferks-FK/ControlPanel.gg-Installer/$GITHUB_SOURCE"
-CRONTAB="* * * * * php /var/www/dashboard/artisan schedule:run >> /dev/null 2>&1"
 
 
 #### User data ####
@@ -140,6 +139,7 @@ echo "* MySQL user created and configured successfully!"
 echo
 echo "**************************************************"
 }
+
 #### Exec Database Setup ####
 setup_database
 
@@ -147,18 +147,31 @@ setup_database
 php artisan key:generate --force
 #### Other general commands ####
 cd || exit
-sed -i "s@dashboarduser@${MYSQL_USER}@g" /var/www/dashboard/.env
-sed -i "s@mysecretpassword@${MYSQL_PASS}@g" /var/www/dashboard/.env
+sed -i -e "s@dashboarduser@${MYSQL_USER}@g" /var/www/dashboard/.env
+sed -i -e "s@mysecretpassword@${MYSQL_PASS}@g" /var/www/dashboard/.env
 cd /var/www/dashboard || exit
 php artisan migrate --seed --force
 php artisan db:seed --class=ExampleItemsSeeder --force
 #### Set Permissions ####
 cd || exit
 chown -R www-data:www-data /var/www/dashboard/*
-#### Crontab Configuration ####
-crontab -e
-$CRONTAB
 #### Create Queue Worker ####
 cd /etc/systemd/system || exit
 curl -o /etc/systemd/system/dashboard.service $GITHUB_BASE_URL/configs/dashboard.service
 systemctl enable --now dashboard.service
+
+#### Config Cronjob ####
+
+insert_cronjob() {
+  echo "* Installing cronjob.. "
+
+  crontab -l | {
+    cat
+    echo "* * * * * php /var/www/dashboard/artisan schedule:run >> /dev/null 2>&1"
+  } | crontab -
+
+  echo "* Cronjob installed!"
+}
+
+#### Exec Cronjob ####
+insert_cronjob
