@@ -16,7 +16,7 @@ Read more about at [ControlPanel](https://controlpanel.gg/) here. This script is
 
 ## Help and support
 
-For help and support regarding the script itself and **not the official ControlPanel project**, Join our support group [Discord](https://discord.gg/AAAAAAAAAAAAAAAA). [SOON]
+For help and support regarding the script itself and **not the official ControlPanel project**, Join our support group [Discord](https://discord.gg/buDBbSGJmQ).
 
 ## Supported installations
 
