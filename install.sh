@@ -22,9 +22,9 @@ FQDN=""
 
 #### FQDN ####
 echo
-echo "*************************************************************************************************************"
-echo "* Attention, use the machine's IP. (Do not use a domain as the script does not yet know how to handle SSL.) *"
-echo "*************************************************************************************************************"
+echo "*************************************************************************************"
+echo "* Attention, Do not use a domain as the script does not yet know how to handle SSL. *"
+echo "*************************************************************************************"
 echo
 while [ -z "$FQDN" ]; do
     echo -n "* Set the FQDN of this panel (panel.example.com): "
@@ -221,6 +221,26 @@ fi
 #### Exec Nginx Configs ####
 nginx_configs
 
+
+#### Create First User ####
+
+create_user() {
+echo
+echo "*********************************"
+echo "* Let's create your login user. *"
+echo "*********************************"
+echo
+echo "************************************************************"
+echo "* You will need the pterodactyl panel user ID to continue. *"
+echo "************************************************************"
+echo
+echo "*******************************************************************************************"
+echo "* You can find this information in the users tab of your pterodactyl panel [/admin/users] *"
+echo "*******************************************************************************************"
+echo
+php artisan make:user
+}
+
 #### Enable All Services ####
 
 systemctl enable nginx
@@ -230,4 +250,8 @@ systemctl enable mariadb
 
 systemctl start nginx
 systemctl start mariadb
+
+
+#### Exec Create User ####
+create_user
 
