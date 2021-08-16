@@ -184,13 +184,9 @@ insert_cronjob
 
 systemctl enable nginx
 systemctl enable mariadb
-systemctl enable redis
-systemctl enable php-fpm
 
 #### Start All Services ####
 
 systemctl start nginx
 systemctl start mariadb
-systemctl start redis
-systemctl start php-fpm
 
