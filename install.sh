@@ -12,6 +12,9 @@ MYSQL_USER="admin"
 MYSQL_PASS="dashboardpass"
 GITHUB_SOURCE="master"
 GITHUB_BASE_URL="https://raw.githubusercontent.com/Ferks-FK/ControlPanel.gg-Installer/$GITHUB_SOURCE"
+PHP_SOCKET="/run/php/php8.0-fpm.sock"
+NGINX="/etc/nginx"
+FQDN=""
 
 
 #### User data ####
@@ -20,6 +23,15 @@ echo
 echo "****************************************************"
 echo "* Let's create your database username and password *"
 echo "****************************************************"
+echo
+
+#### FQDN ####
+
+while [ -z "$FQDN" ]; do
+    echo -n "* Set the FQDN of this panel (panel.example.com): "
+    read -r FQDN
+    [ -z "$FQDN" ] && echo "FQDN cannot be empty"
+done
 echo
 echo -n "* Username (admin): "
 read -r MYSQL_USER_INPUT
@@ -179,6 +191,26 @@ insert_cronjob() {
 
 #### Exec Cronjob ####
 insert_cronjob
+
+
+nginx_configs() {
+if [ -d "$NGINX" ]; then
+rm -rf /etc/nginx/sites-available/default
+
+curl -o /etc/nginx/sites-available $GITHUB_BASE_URL/configs/dashboard.conf
+
+sed -i -e "s@<domain>@${FQDN}@g" /etc/nginx/sites-available/dashboard.conf
+
+sed -i -e "s@<php_socket>@${PHP_SOCKET}@g" /etc/nginx/sites-available/dashboard.conf
+
+ln -sf /etc/nginx/sites-available/dashboard.conf /etc/nginx/sites-enabled/dashboard.conf
+
+systemctl restart nginx
+else
+exit 1
+fi
+}
+
 
 #### Enable All Services ####
 
