@@ -19,19 +19,23 @@ FQDN=""
 
 #### User data ####
 
-echo
-echo "****************************************************"
-echo "* Let's create your database username and password *"
-echo "****************************************************"
-echo
 
 #### FQDN ####
-
+echo
+echo "*************************************************************************************************************"
+echo "* Attention, use the machine's IP. (Do not use a domain as the script does not yet know how to handle SSL.) *"
+echo "*************************************************************************************************************"
+echo
 while [ -z "$FQDN" ]; do
     echo -n "* Set the FQDN of this panel (panel.example.com): "
     read -r FQDN
     [ -z "$FQDN" ] && echo "FQDN cannot be empty"
 done
+echo
+echo "****************************************************"
+echo "* Let's create your database username and password *"
+echo "****************************************************"
+echo
 echo
 echo -n "* Username (admin): "
 read -r MYSQL_USER_INPUT
@@ -48,6 +52,7 @@ echo
 
 summary() {
 echo "******************************"
+echo "* FQDN: $FQDN"
 echo "* Username: $MYSQL_USER"
 echo "* Password: $MYSQL_PASS"
 echo "******************************"
@@ -195,7 +200,9 @@ insert_cronjob
 
 nginx_configs() {
 if [ -d "$NGINX" ]; then
-rm -rf /etc/nginx/sites-available/default
+systemctl stop nginx
+
+rm -rf /etc/nginx/sites-enabled/default
 
 curl -o /etc/nginx/sites-available/dashboard.conf $GITHUB_BASE_URL/configs/dashboard.conf
 
@@ -205,7 +212,7 @@ sed -i -e "s@<php_socket>@${PHP_SOCKET}@g" /etc/nginx/sites-available/dashboard.
 
 ln -sf /etc/nginx/sites-available/dashboard.conf /etc/nginx/sites-enabled/dashboard.conf
 
-systemctl restart nginx
+systemctl start nginx
 else
 exit 1
 fi
