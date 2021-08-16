@@ -22,9 +22,9 @@ FQDN=""
 
 #### FQDN ####
 echo
-echo "*************************************************************************************"
-echo "* Attention, Do not use a domain as the script does not yet know how to handle SSL. *"
-echo "*************************************************************************************"
+echo "******************************************************************"
+echo "* Attention, Do not use a domain as the script does not yet know how to handle SSL."
+echo "******************************************************************"
 echo
 while [ -z "$FQDN" ]; do
     echo -n "* Set the FQDN of this panel (panel.example.com): "
@@ -234,10 +234,11 @@ echo "************************************************************"
 echo "* You will need the pterodactyl panel user ID to continue. *"
 echo "************************************************************"
 echo
-echo "*******************************************************************************************"
-echo "* You can find this information in the users tab of your pterodactyl panel [/admin/users] *"
-echo "*******************************************************************************************"
+echo "******************************************************************"
+echo "* You can find this information in the users tab of your pterodactyl panel [/admin/users]"
+echo "******************************************************************"
 echo
+cd /var/www/dashboard || exit
 php artisan make:user
 }
 
