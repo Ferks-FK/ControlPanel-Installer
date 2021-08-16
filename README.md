@@ -60,8 +60,6 @@ The installation scripts can install and configure a firewall for you. The scrip
 
 ## Development & Ops
 
-## Contributors ✨
-
 Copyright (C) 2021 - 2021, Ferks-FK.
 
 Created and maintained by [Ferks-FK](https://github.com/Ferks-FK).
