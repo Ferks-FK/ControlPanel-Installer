@@ -197,7 +197,7 @@ nginx_configs() {
 if [ -d "$NGINX" ]; then
 rm -rf /etc/nginx/sites-available/default
 
-curl -o /etc/nginx/sites-available $GITHUB_BASE_URL/configs/dashboard.conf
+curl -o /etc/nginx/sites-available/dashboard.conf $GITHUB_BASE_URL/configs/dashboard.conf
 
 sed -i -e "s@<domain>@${FQDN}@g" /etc/nginx/sites-available/dashboard.conf
 
