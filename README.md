@@ -45,7 +45,7 @@ To use the install scripts, just run the commands as root.
 
 Panel Installation:
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/Ferks-FK/pterodactyl-installer/master/install-panel.sh)
+bash <(curl -s https://raw.githubusercontent.com/Ferks-FK/ControlPanel.gg-Installer/main/install.sh)
 ```
 
 ## Additional information:
