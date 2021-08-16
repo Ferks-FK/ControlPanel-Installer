@@ -74,20 +74,50 @@ apt -y install php8.0 php8.0-{cli,gd,mysql,pdo,mbstring,tokenizer,bcmath,xml,fpm
 apt-get install php8.0-intl
 curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer
 }
+fi
+}
+
+
+#### Exec Installation ####
+
+echo -e -n "\n* Initial configuration completed. Continue with installation? (y/N): "
+read -r CONFIRM
+if [[ "$CONFIRM" =~ [Yy] ]]; then
+    #### Continue Install ####
+    continue_install
+  else
+    echo "Installation aborted!"
+    exit 1
+fi
+
+#### Exec Install_Dependencies ####
+install_dependencies
+
 #### Download Files ####
+
 download_files() {
 mkdir -p /var/www/dashboard
 cd /var/www/dashboard || exit
 git clone https://github.com/ControlPanel-gg/dashboard.git ./
 chmod -R 755 storage/* bootstrap/cache/
 }
+
+#### Exec Download_Files ####
+download_files
+
 #### Installation ####
+
 installation() {
 cp .env.example .env
 composer install --no-dev --optimize-autoloader
 php artisan storage:link
 }
+
+#### Exec Installation ####
+installation
+
 #### Database ####
+
 setup_database() {
 echo "* Creating user..."
 mysql -u root -e "CREATE USER '${MYSQL_USER}'@'127.0.0.1' IDENTIFIED BY '${MYSQL_PASS}';"
@@ -110,6 +140,9 @@ echo "* MySQL user created and configured successfully!"
 echo
 echo "**************************************************"
 }
+#### Exec Database Setup ####
+setup_database
+
 #### Run command after database creation ####
 php artisan key:generate --force
 #### Other general commands ####
@@ -129,35 +162,3 @@ $CRONTAB
 cd /etc/systemd/system || exit
 curl -o /etc/systemd/system/dashboard.service $GITHUB_BASE_URL/configs/dashboard.service
 systemctl enable --now dashboard.service
-fi
-}
-
-
-#### Exec Installation ####
-
-echo -e -n "\n* Initial configuration completed. Continue with installation? (y/N): "
-read -r CONFIRM
-if [[ "$CONFIRM" =~ [Yy] ]]; then
-    #### Continue Install ####
-    continue_install
-  else
-    echo "Installation aborted!"
-    exit 1
-fi
-
-#### Exec Install_Dependencies ####
-install_dependencies
-
-
-#### Exec Download_Files ####
-download_files
-
-
-#### Exec Installation ####
-installation
-
-
-#### Exec Database Setup ####
-setup_database
-
-
