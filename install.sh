@@ -107,7 +107,10 @@ download_files
 #### Installation ####
 
 installation() {
-cp .env.example .env
+rm -R .env.example
+curl -o example.env $GITHUB_BASE_URL/configs/example.env
+cp example.env .env
+rm -R example.env
 composer install --no-dev --optimize-autoloader
 php artisan storage:link
 }
