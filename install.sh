@@ -211,6 +211,8 @@ exit 1
 fi
 }
 
+#### Exec Nginx Configs ####
+nginx_configs
 
 #### Enable All Services ####
 
