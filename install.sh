@@ -93,7 +93,6 @@ curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/loca
 fi
 }
 
-
 #### Exec Installation ####
 
 echo -e -n "\n* Initial configuration completed. Continue with installation? (y/N): "
