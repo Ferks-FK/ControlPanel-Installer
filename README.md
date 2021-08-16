@@ -58,6 +58,9 @@ If you use another distribution and have a problem, don't hesitate to open a pro
 
 The installation scripts can install and configure a firewall for you. The script will ask whether you want this or not. It is highly recommended to opt-in for the automatic firewall setup. [SOON]
 
+## Wiki Link
+[Wiki](https://github.com/Ferks-FK/ControlPanel.gg-Installer/wiki/Wiki)
+
 ## Development & Ops
 
 Copyright (C) 2021 - 2021, Ferks-FK.
