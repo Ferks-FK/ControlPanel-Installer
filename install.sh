@@ -40,6 +40,7 @@ echo
 echo
 }
 
+
 #### Enable Firewall ####
 
 enable_ufw() {
