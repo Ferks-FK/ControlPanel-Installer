@@ -49,8 +49,8 @@ echo -n "* Do you want to automatically configure UFW (firewall)? (y/N): "
 read -r CONFIRM_UFW
 
 if [[ "$CONFIRM_UFW" =~ [Yy] ]]; then
-      #### Exec Enable Ufw ####
-      enable_ufw
+#### Exec Enable Ufw ####
+enable_ufw
 else
 echo 
 echo "**********************************************************************"
@@ -69,7 +69,9 @@ echo -n "* Continue without configuring UFW? (y/N): "
 read -r NOT_UFW
 
 if [[ "$NOT_UFW" =~ [Yy] ]]; then
-echo "Proceeding with the installation..."
+echo
+echo "* Proceeding with the installation..."
+echo
 else
 echo
 fi
