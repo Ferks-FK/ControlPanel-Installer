@@ -42,6 +42,28 @@ echo
 echo
 }
 
+#### Enable Firewall ####
+
+enable_ufw() {
+apt-get -y install ufw
+
+echo -e "\n* Enabling Uncomplicated Firewall (UFW)"
+echo "* Opening port 80 (HTTP), 443 (HTTPS) and 3306 (MYSQL)"
+
+ufw allow http >/dev/null
+ufw allow https >/dev/null
+ufw allow mysql >/dev/null
+
+ufw --force enable
+ufw --force reload
+ufw status numbered | sed '/v6/d'
+echo
+echo "***************************************************"
+echo "* Firewall installed and configured successfully! *"
+echo "***************************************************"
+echo
+}
+
 #### Ask Firewall ####
 
 ask_firewall() {
@@ -84,29 +106,6 @@ ask_informations
 #### Exec Ask Firewall ####
 ask_firewall
  
-
-#### Enable Firewall ####
-
-enable_ufw() {
-apt-get -y install ufw
-
-echo -e "\n* Enabling Uncomplicated Firewall (UFW)"
-echo "* Opening port 80 (HTTP), 443 (HTTPS) and 3306 (MYSQL)"
-
-ufw allow http >/dev/null
-ufw allow https >/dev/null
-ufw allow mysql >/dev/null
-
-ufw --force enable
-ufw --force reload
-ufw status numbered | sed '/v6/d'
-echo
-echo "***************************************************"
-echo "* Firewall installed and configured successfully! *"
-echo "***************************************************"
-echo
-}
-
 
 #### Review of settings ####
 
