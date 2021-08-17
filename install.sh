@@ -127,7 +127,7 @@ rm -R .env.example
 curl -o example.env $GITHUB_BASE_URL/configs/example.env
 cp example.env .env
 rm -R example.env
-composer install --no-dev --optimize-autoloader
+COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader
 php artisan storage:link
 }
 
