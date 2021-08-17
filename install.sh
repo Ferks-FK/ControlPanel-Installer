@@ -12,9 +12,100 @@ MYSQL_USER="admin"
 MYSQL_PASS="dashboardpass"
 GITHUB_SOURCE="master"
 GITHUB_BASE_URL="https://raw.githubusercontent.com/Ferks-FK/ControlPanel.gg-Installer/$GITHUB_SOURCE"
-PHP_SOCKET="/run/php/php8.0-fpm.sock"
 NGINX="/etc/nginx"
 FQDN=""
+
+#### OS check ####
+
+check_distro() {
+  if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS=$(echo "$ID")
+    OS_VER=$VERSION_ID
+  elif type lsb_release >/dev/null 2>&1; then
+    OS=$(lsb_release -si)
+    OS_VER=$(lsb_release -sr)
+  elif [ -f /etc/lsb-release ]; then
+    . /etc/lsb-release
+    OS=$(echo "$DISTRIB_ID")
+    OS_VER=$DISTRIB_RELEASE
+  elif [ -f /etc/debian_version ]; then
+    OS="debian"
+    OS_VER=$(cat /etc/debian_version)
+  elif [ -f /etc/SuSe-release ]; then
+    OS="SuSE"
+    OS_VER="?"
+  elif [ -f /etc/redhat-release ]; then
+    OS="Red Hat/CentOS"
+    OS_VER="?"
+  else
+    OS=$(uname -s)
+    OS_VER=$(uname -r)
+  fi
+
+  OS=$(echo "$OS")
+  OS_VER_MAJOR=$(echo "$OS_VER" | cut -d. -f1)
+}
+
+#### Exec Check Distro ####
+check_distro
+
+check_os_comp() {
+  CPU_ARCHITECTURE=$(uname -m)
+  if [ "${CPU_ARCHITECTURE}" != "x86_64" ]; then # check the architecture
+    echo "Detected CPU architecture $CPU_ARCHITECTURE"
+    echo "Using any other architecture than 64 bit (x86_64) will cause problems."
+
+    echo -e -n "* Are you sure you want to proceed? (y/N):"
+    read -r choice
+
+    if [[ ! "$choice" =~ [Yy] ]]; then
+      echo "Installation aborted!"
+      exit 1
+    fi
+  fi
+
+  case "$OS" in
+  ubuntu)
+    PHP_SOCKET="/run/php/php8.0-fpm.sock"
+    [ "$OS_VER_MAJOR" == "18" ] && SUPPORTED=true
+    [ "$OS_VER_MAJOR" == "20" ] && SUPPORTED=true
+    ;;
+  debian)
+    PHP_SOCKET="/run/php/php8.0-fpm.sock"
+    [ "$OS_VER_MAJOR" == "9" ] && SUPPORTED=true
+    [ "$OS_VER_MAJOR" == "10" ] && SUPPORTED=true
+    ;;
+  centos)
+    PHP_SOCKET="/var/run/php-fpm/dashboard.sock"
+    [ "$OS_VER_MAJOR" == "7" ] && SUPPORTED=true
+    [ "$OS_VER_MAJOR" == "8" ] && SUPPORTED=true
+    ;;
+  *)
+    SUPPORTED=false
+    ;;
+  esac
+
+  # exit if not supported
+  if [ "$SUPPORTED" == true ]; then
+	echo
+	echo "*****************************"
+    echo "* $OS $OS_VER is supported. *"
+	echo "*****************************"
+	echo
+  else
+    echo "* $OS $OS_VER is not supported!"
+	echo
+	echo "*****************************"
+    echo "* Unsupported OS, aborting! *"
+	echo "*****************************"
+	echo
+    exit 1
+  fi
+}
+
+#### Exec Check OS Comp ####
+check_os_comp
 
 ask_informations() {
 echo
@@ -36,13 +127,11 @@ while [ -z "$FQDN" ]; do
     read -r FQDN
     [ -z "$FQDN" ] && echo "FQDN cannot be empty"
 done
-echo
-echo
-}
+#### Ask Firewall ####
+echo -n "* Do you want to automatically configure UFW (firewall)? (y/N): "
+read -r CONFIRM_UFW
 
-
-#### Enable Firewall ####
-
+if [[ "$CONFIRM_UFW" =~ [Yy] ]]; then
 enable_ufw() {
 apt-get -y install ufw
 
@@ -62,16 +151,6 @@ echo "* Firewall installed and configured successfully! *"
 echo "***************************************************"
 echo
 }
-
-#### Ask Firewall ####
-
-ask_firewall() {
-echo -n "* Do you want to automatically configure UFW (firewall)? (y/N): "
-read -r CONFIRM_UFW
-
-if [[ "$CONFIRM_UFW" =~ [Yy] ]]; then
-#### Exec Enable Ufw ####
-enable_ufw
 else
 echo 
 echo "**********************************************************************"
@@ -79,13 +158,6 @@ echo "* You chose not to configure the Firewall, proceed at your own risk! *"
 echo "**********************************************************************"
 echo
 #### Exec Not Ufw ####
-ask_not_ufw
-fi
-}
-
-#### Continue without UFW? ####
-
-ask_not_ufw() {
 echo -n "* Continue without configuring UFW? (y/N): "
 read -r NOT_UFW
 
@@ -97,28 +169,32 @@ else
 echo "Installation aborted!"
 exit 1
 fi
+fi
 }
+
 
 #### Exec Ask Informations ####
 ask_informations
 
 
-#### Exec Ask Firewall ####
-ask_firewall
- 
-
 #### Review of settings ####
 
 summary() {
+echo
+echo
 echo "******************************"
 echo "* FQDN: $FQDN"
 echo "* Username: $MYSQL_USER"
 echo "* Password: $MYSQL_PASS"
+echo "* Configure UFW: $CONFIRM_UFW"
 echo "******************************"
+echo
+echo
 }
 
 #### Exec summary ####
 summary
+
 
 
 #### Detect existing installation ####
@@ -152,8 +228,9 @@ curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/loca
 fi
 }
 
-#### Exec Installation ####
+#### Installation ####
 
+exec_installation() {
 echo -e -n "\n* Initial configuration completed. Continue with installation? (y/N): "
 read -r CONFIRM
 if [[ "$CONFIRM" =~ [Yy] ]]; then
@@ -163,9 +240,15 @@ if [[ "$CONFIRM" =~ [Yy] ]]; then
     echo "Installation aborted!"
     exit 1
 fi
+}
+
+#### Exec Installation ####
+exec_installation
+
 
 #### Exec Install_Dependencies ####
 install_dependencies
+
 
 #### Download Files ####
 
@@ -178,6 +261,7 @@ chmod -R 755 storage/* bootstrap/cache/
 
 #### Exec Download_Files ####
 download_files
+
 
 #### Installation ####
 
@@ -309,6 +393,9 @@ systemctl enable mariadb
 
 systemctl start nginx
 systemctl start mariadb
+
+#### Exec Unable Ufw ####
+enable_ufw
 
 
 #### Exec Create User ####
