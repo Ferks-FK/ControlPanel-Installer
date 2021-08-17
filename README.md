@@ -12,7 +12,7 @@ Read more about at [ControlPanel](https://controlpanel.gg/) here. This script is
 
 - Automatic installation of the ControlPanel.gg (dependencies, database, cronjob, nginx).
 - Panel: (optional) automatic configuration of Let's Encrypt. [SOON]
-- Panel: (optional) automatic configuration of UFW (firewall for Ubuntu/Debian). [SOON]
+- Panel: (optional) automatic configuration of UFW (firewall for Ubuntu/Debian).
 
 ## Help and support
 
