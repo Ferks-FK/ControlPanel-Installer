@@ -313,4 +313,3 @@ systemctl start mariadb
 
 #### Exec Create User ####
 create_user
-
