@@ -26,14 +26,14 @@ List of supported installation setups for panel (installations supported by this
 
 | Operating System | Version | nginx support      | PHP Version |
 | ---------------- | ------- | ------------------ | ----------- |
-| Ubuntu           | 14.04   | [NOT TESTED]       |             |
-|                  | 16.04   | [NOT TESTED]       |             |
-|                  | 18.04   | [NOT TESTED]       |             |
+| Ubuntu           | 14.04   | :red_circle:       |             |
+|                  | 16.04   | :red_circle:       |             |
+|                  | 18.04   | :white_check_mark: | 8.0         |
 |                  | 20.04   | :white_check_mark: | 8.0         |
-| Debian           | 8       | [NOT TESTED]       |             |
+| Debian           | 8       | :red_circle:       |             |
 |                  | 9       | [NOT TESTED]       |             |
 |                  | 10      | [NOT TESTED]       |             |
-| CentOS           | 6       | [NOT TESTED]       |             |
+| CentOS           | 6       | :red_circle:       |             |
 |                  | 7       | [NOT TESTED]       |             |
 |                  | 8       | [NOT TESTED]       |             |
 
