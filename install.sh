@@ -16,15 +16,22 @@ PHP_SOCKET="/run/php/php8.0-fpm.sock"
 NGINX="/etc/nginx"
 FQDN=""
 
-
-#### User data ####
-
-
-#### FQDN ####
+ask_informations() {
 echo
-echo "******************************************************************"
-echo "* Attention, Do not use a domain as the script does not yet know how to handle SSL."
-echo "******************************************************************"
+echo
+echo "*****************************"
+echo "* Enter all data correctly. *"
+echo "*****************************"
+echo
+echo
+echo -n "* Username (admin): "
+read -r MYSQL_USER_INPUT
+[ -z "$MYSQL_USER_INPUT" ] && MYSQL_USER="admin" || MYSQL_USER=$MYSQL_USER_INPUT
+
+echo -n "* Password (dashboardpass): "
+read -r MYSQL_PASS_INPUT
+[ -z "$MYSQL_PASS_INPUT" ] && MYSQL_PASS="dashboardpass" || MYSQL_PASS=$MYSQL_PASS_INPUT
+echo
 echo
 while [ -z "$FQDN" ]; do
     echo -n "* Set the FQDN of this panel (panel.example.com): "
@@ -32,21 +39,72 @@ while [ -z "$FQDN" ]; do
     [ -z "$FQDN" ] && echo "FQDN cannot be empty"
 done
 echo
-echo "****************************************************"
-echo "* Let's create your database username and password *"
-echo "****************************************************"
 echo
-echo
-echo -n "* Username (admin): "
-read -r MYSQL_USER_INPUT
-[ -z "$MYSQL_USER_INPUT" ] && MYSQL_USER="admin" || MYSQL_USER=$MYSQL_USER_INPUT
+}
 
+#### Ask Firewall ####
+
+ask_firewall() {
+echo -n "* Do you want to automatically configure UFW (firewall)? (y/N): "
+read -r CONFIRM_UFW
+
+if [[ "$CONFIRM_UFW" =~ [Yy] ]]; then
+      #### Exec Enable Ufw ####
+      enable_ufw
+else
+echo 
+echo "**********************************************************************"
+echo "* You chose not to configure the Firewall, proceed at your own risk! *"
+echo "**********************************************************************"
 echo
-echo -n "* Password (dashboardpass): "
-read -r MYSQL_PASS_INPUT
-[ -z "$MYSQL_PASS_INPUT" ] && MYSQL_PASS="dashboardpass" || MYSQL_PASS=$MYSQL_PASS_INPUT
+#### Exec Not Ufw ####
+ask_not_ufw
+fi
+}
+
+#### Continue without UFW? ####
+
+ask_not_ufw() {
+echo -n "* Continue without configuring UFW? (y/N): "
+read -r NOT_UFW
+
+if [[ "$NOT_UFW" =~ [Yy] ]]; then
+echo "Proceeding with the installation..."
+else
 echo
+fi
+}
+
+#### Exec Ask Informations ####
+ask_informations
+
+
+#### Exec Ask Firewall ####
+ask_firewall
+ 
+
+#### Enable Firewall ####
+
+enable_ufw() {
+apt-get -y install ufw
+
+echo -e "\n* Enabling Uncomplicated Firewall (UFW)"
+echo "* Opening port 80 (HTTP), 443 (HTTPS) and 3306 (MYSQL)"
+
+ufw allow http >/dev/null
+ufw allow https >/dev/null
+ufw allow mysql >/dev/null
+
+ufw --force enable
+ufw --force reload
+ufw status numbered | sed '/v6/d'
 echo
+echo "***************************************************"
+echo "* Firewall installed and configured successfully! *"
+echo "***************************************************"
+echo
+}
+
 
 #### Review of settings ####
 
