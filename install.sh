@@ -31,8 +31,6 @@ read -r MYSQL_USER_INPUT
 echo -n "* Password (dashboardpass): "
 read -r MYSQL_PASS_INPUT
 [ -z "$MYSQL_PASS_INPUT" ] && MYSQL_PASS="dashboardpass" || MYSQL_PASS=$MYSQL_PASS_INPUT
-echo
-echo
 while [ -z "$FQDN" ]; do
     echo -n "* Set the FQDN of this panel (panel.example.com): "
     read -r FQDN
@@ -95,7 +93,8 @@ echo
 echo "* Proceeding with the installation..."
 echo
 else
-echo
+echo "Installation aborted!"
+exit 1
 fi
 }
 
