@@ -31,8 +31,9 @@ List of supported installation setups for panel (installations supported by this
 |                  | 18.04   | :white_check_mark: | 8.0         |
 |                  | 20.04   | :white_check_mark: | 8.0         |
 | Debian           | 8       | :red_circle:       |             |
-|                  | 9       | [NOT TESTED]       |             |
-|                  | 10      | [NOT TESTED]       |             |
+|                  | 9       | :white_check_mark: | 8.0         |
+|                  | 10      | :white_check_mark: | 8.0         |
+|                  | 11      | [NOT TESTED]       |             |
 | CentOS           | 6       | :red_circle:       |             |
 |                  | 7       | [NOT TESTED]       |             |
 |                  | 8       | [NOT TESTED]       |             |
