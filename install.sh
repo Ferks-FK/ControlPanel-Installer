@@ -109,14 +109,14 @@ check_os_comp() {
   if [ "$SUPPORTED" == true ]; then
 	echo
 	echo "*****************************"
-    echo "* $OS $OS_VER is supported. *"
+    	echo "* $OS $OS_VER is supported. *"
 	echo "*****************************"
 	echo
   else
     echo "* $OS $OS_VER is not supported!"
 	echo
 	echo "*****************************"
-    echo "* Unsupported OS, aborting! *"
+    	echo "* Unsupported OS, aborting! *"
 	echo "*****************************"
 	echo
     exit 1
