@@ -15,6 +15,25 @@ GITHUB_BASE_URL="https://raw.githubusercontent.com/Ferks-FK/ControlPanel.gg-Inst
 NGINX="/etc/nginx"
 FQDN=""
 
+
+#### Detect existing installation ####
+
+DEI=/var/www/dashboard
+
+if [ -d "$DEI" ]; then
+echo
+echo "*******************************************************************"
+echo "* There is already a panel installation on your system, aborting! *"
+echo "*******************************************************************"
+exit 1
+else
+echo
+echo "**********************************************************************"
+echo "* No existing installation detected, proceeding with installation... *"
+echo "**********************************************************************"
+echo
+fi
+
 #### OS check ####
 
 check_distro() {
@@ -196,26 +215,14 @@ echo
 summary
 
 
+#### Install Dependencies for Ubuntu 20 ####
 
-#### Detect existing installation ####
-
-continue_install() {
-DEI=/var/www/dashboard
-
-if [ -d "$DEI" ]; then
+ubuntu20_dep() {
 echo
-echo "*******************************************************************"
-echo "* There is already a panel installation on your system, aborting! *"
-echo "*******************************************************************"
-exit 1
-else
+echo "*******************************************"
+echo "* Installing dependencies for Ubuntu 20.. *"
+echo "*******************************************"
 echo
-echo "**********************************************************************"
-echo "* No existing installation detected, proceeding with installation... *"
-echo "**********************************************************************"
-echo
-#### Install Dependencies ####
-install_dependencies() {
 apt -y install software-properties-common curl apt-transport-https ca-certificates gnupg
 LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php
 add-apt-repository -y ppa:chris-lea/redis-server
@@ -225,17 +232,95 @@ apt -y install php8.0 php8.0-{cli,gd,mysql,pdo,mbstring,tokenizer,bcmath,xml,fpm
 apt-get -y install php8.0-intl
 curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer
 }
-fi
+
+#### Install Dependencies for Ubuntu 18 ####
+
+ubuntu18_dep() {
+echo
+echo "*******************************************"
+echo "* Installing dependencies for Ubuntu 18.. *"
+echo "*******************************************"
+echo
+apt -y install software-properties-common curl apt-transport-https ca-certificates gnupg
+LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php
+add-apt-repository -y ppa:chris-lea/redis-server
+curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash
+apt-get -y update && apt-get -y upgrade
+apt-add-repository universe
+apt -y install php8.0 php8.0-{cli,gd,mysql,pdo,mbstring,tokenizer,bcmath,xml,fpm,curl,zip} mariadb-server nginx tar unzip git redis-server
+apt-get -y install php8.0-intl
+curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer
 }
 
-#### Installation ####
+#### Install Dependencies for Debian 9 ####
+
+debian9_dep() {
+echo
+echo "******************************************"
+echo "* Installing dependencies for Debian 9.. *"
+echo "******************************************"
+echo
+apt-get -y install dirmngr
+apt -y install software-properties-common curl apt-transport-https ca-certificates gnupg lsb-release -y
+wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
+echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/php.list
+curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash
+apt-get -y update && apt-get -y upgrade
+apt -y install php8.0 php8.0-{cli,gd,mysql,pdo,mbstring,tokenizer,bcmath,xml,fpm,curl,zip} mariadb-server nginx tar unzip git redis-server
+apt-get -y install php8.0-intl
+curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+}
+
+#### Install Dependencies for Debian 10 ####
+
+debian10_dep() {
+echo
+echo "*******************************************"
+echo "* Installing dependencies for Debian 10.. *"
+echo "*******************************************"
+echo
+apt-get -y install dirmngr
+apt -y install software-properties-common curl apt-transport-https ca-certificates gnupg lsb-release -y
+wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
+echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/php.list
+apt-get -y update && apt-get -y upgrade
+apt -y install php8.0 php8.0-{cli,gd,mysql,pdo,mbstring,tokenizer,bcmath,xml,fpm,curl,zip} mariadb-server nginx tar unzip git redis-server
+apt-get -y install php8.0-intl
+curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+}
+
+#### Exec Perform Install ####
+
+perform_install() {
+echo
+echo "****************************************************"
+echo "* Starting installation.. this might take a while! *"
+echo "****************************************************"
+echo
+
+case "$OS" in
+debian | ubuntu)
+apt-get -y update
+
+if [ "$OS" == "ubuntu" ]; then
+ [ "$OS_VER_MAJOR" == "20" ] && ubuntu20_dep
+ [ "$OS_VER_MAJOR" == "18" ] && ubuntu18_dep
+elif [ "$OS" == "debian" ]; then
+ [ "$OS_VER_MAJOR" == "9" ] && debian9_dep
+ [ "$OS_VER_MAJOR" == "10" ] && debian10_dep
+fi
+;;
+esac
+}
+
 
 exec_installation() {
+#### Confirm Installation ####
 echo -e -n "\n* Initial configuration completed. Continue with installation? (y/N): "
 read -r CONFIRM
 if [[ "$CONFIRM" =~ [Yy] ]]; then
     #### Continue Install ####
-    continue_install
+    perform_install
   else
     echo "Installation aborted!"
     exit 1
@@ -245,9 +330,6 @@ fi
 #### Exec Installation ####
 exec_installation
 
-
-#### Exec Install_Dependencies ####
-install_dependencies
 
 
 #### Download Files ####
@@ -332,8 +414,11 @@ insert_cronjob() {
     cat
     echo "* * * * * php /var/www/dashboard/artisan schedule:run >> /dev/null 2>&1"
   } | crontab -
-
-  echo "* Cronjob installed!"
+  echo
+  echo "**********************"
+  echo "* Cronjob installed! *"
+  echo "**********************"
+  echo
 }
 
 #### Exec Cronjob ####
