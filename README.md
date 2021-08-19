@@ -11,7 +11,7 @@ Read more about at [ControlPanel](https://controlpanel.gg/) here. This script is
 ## Features
 
 - Automatic installation of the ControlPanel.gg (dependencies, database, cronjob, nginx).
-- Panel: (optional) automatic configuration of Let's Encrypt. [SOON]
+- Panel: (optional) automatic configuration of Let's Encrypt.
 - Panel: (optional) automatic configuration of UFW (firewall for Ubuntu/Debian).
 
 ## Help and support
@@ -57,7 +57,7 @@ If you use another distribution and have a problem, don't hesitate to open a pro
 
 ## Firewall setup
 
-The installation scripts can install and configure a firewall for you. The script will ask whether you want this or not. It is highly recommended to opt-in for the automatic firewall setup. [SOON]
+The installation scripts can install and configure a firewall for you. The script will ask whether you want this or not. It is highly recommended to opt-in for the automatic firewall setup.
 
 ## Wiki Link
 [Wiki](https://github.com/Ferks-FK/ControlPanel.gg-Installer/wiki/Wiki)
