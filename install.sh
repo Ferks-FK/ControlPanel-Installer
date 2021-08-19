@@ -468,9 +468,9 @@ curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin
 
 centos7_dep() {
 echo
-echo "*******************************************"
+echo "******************************************"
 echo "* Installing dependencies for CentOS 7.. *"
-echo "*******************************************"
+echo "******************************************"
 echo
 yum update -y
 yum install -y policycoreutils policycoreutils-python selinux-policy selinux-policy-targeted libselinux-utils setroubleshoot-server setools setools-console mcstrans
@@ -478,12 +478,10 @@ yum install -y epel-release http://rpms.remirepo.net/enterprise/remi-release-7.r
 yum install -y yum-utils
 yum-config-manager -y --disable remi-php54
 yum-config-manager -y --enable remi-php80
-wget https://rhel7.iuscommunity.org/ius-release.rpm
-sudo rpm -Uvh ius-release*.rpm
 yum_update
-yum --enablerepo=remi install php-intl
 curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash
 yum -y install php php-common php-tokenizer php-curl php-fpm php-cli php-json php-mysqlnd php-mcrypt php-gd php-mbstring php-pdo php-zip php-bcmath php-dom php-opcache mariadb-server nginx curl tar zip unzip git redis
+yum --enablerepo=remi install -y php-intl
 curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 services_centos
 setsebool -P httpd_can_network_connect 1 || true
@@ -495,9 +493,9 @@ setsebool -P httpd_unified 1 || true
 
 centos8_dep() {
 echo
-echo "*******************************************"
+echo "******************************************"
 echo "* Installing dependencies for CentOS 8.. *"
-echo "*******************************************"
+echo "******************************************"
 echo
 dnf install -y policycoreutils selinux-policy selinux-policy-targeted setroubleshoot-server setools setools-console mcstrans
 dnf install -y epel-release http://rpms.remirepo.net/enterprise/remi-release-8.rpm
