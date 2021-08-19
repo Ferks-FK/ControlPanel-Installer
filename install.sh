@@ -460,11 +460,29 @@ echo "* Installing dependencies for Debian 10.. *"
 echo "*******************************************"
 echo
 apt-get -y install dirmngr
-apt -y install software-properties-common curl apt-transport-https ca-certificates gnupg lsb-release -y
+apt-get -y install software-properties-common curl apt-transport-https ca-certificates gnupg lsb-release
 wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
 echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/php.list
 apt-get -y update && apt-get -y upgrade
-apt -y install php8.0 php8.0-{cli,gd,mysql,pdo,mbstring,tokenizer,bcmath,xml,fpm,curl,zip} mariadb-server nginx tar unzip git redis-server
+apt-get -y install php8.0 php8.0-{cli,gd,mysql,pdo,mbstring,tokenizer,bcmath,xml,fpm,curl,zip} mariadb-server nginx tar unzip git redis-server
+apt-get -y install php8.0-intl
+curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+}
+
+#### Install Dependencies for Debian 11 ####
+
+debian11_dep() {
+echo
+echo "*******************************************"
+echo "* Installing dependencies for Debian 11.. *"
+echo "*******************************************"
+echo
+apt-get -y install dirmngr
+apt-get -y install ca-certificates apt-transport-https lsb-release
+wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
+echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/php.list
+apt_update
+apt-get -y install php8.0 php8.0-{cli,gd,mysql,pdo,mbstring,tokenizer,bcmath,xml,fpm,curl,zip} mariadb-server nginx curl tar unzip git redis-server cron
 apt-get -y install php8.0-intl
 curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 }
@@ -752,6 +770,7 @@ if [ "$OS" == "ubuntu" ]; then
 elif [ "$OS" == "debian" ]; then
  [ "$OS_VER_MAJOR" == "9" ] && debian9_dep
  [ "$OS_VER_MAJOR" == "10" ] && debian10_dep
+ [ "$OS_VER_MAJOR" == "11" ] && debian11_dep
 fi
 ;;
 
