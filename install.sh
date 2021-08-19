@@ -332,12 +332,17 @@ echo
 
 
 ufw_centos() {
+[ "$OS_VER_MAJOR" == "7" ] && yum -y -q install firewalld >/dev/null
+[ "$OS_VER_MAJOR" == "8" ] && dnf -y -q install firewalld >/dev/null
+
+systemctl --now enable firewalld >/dev/null
+
 echo -e "\n* Enabling Firewall..."
 echo "* Opening port 80 (HTTP), 443 (HTTPS) and 3306 (MYSQL)"
-firewall-cmd --add-service=http --permanent
-firewall-cmd --add-service=https --permanent
-firewall-cmd --add-service=mysql --permanent
-firewall-cmd --reload
+firewall-cmd --add-service=http --permanent -q
+firewall-cmd --add-service=https --permanent -q
+firewall-cmd --add-service=mysql --permanent -q
+firewall-cmd --reload -q
 echo
 echo "*************************************"
 echo "* Firewall configured successfully! *"
