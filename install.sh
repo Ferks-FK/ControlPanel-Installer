@@ -130,6 +130,7 @@ check_os_comp
 
 
 #### Update Repositories ####
+
 case "$OS" in
 debian | ubuntu)
 apt-get -y update
@@ -159,6 +160,13 @@ print_error() {
   echo -e "* ${COLOR_RED}ERROR${COLOR_NC}: $1"
   echo ""
 }
+
+#### Colors ####
+
+GREEN="\e[0;92m"
+YELLOW="\033[1;33m"
+reset="\e[0m"
+red='\033[0;31m'
 
 regex="^(([A-Za-z0-9]+((\.|\-|\_|\+)?[A-Za-z0-9]?)*[A-Za-z0-9]+)|[A-Za-z0-9]+)@(([A-Za-z0-9]+)+((\.|\-|\_)?([A-Za-z0-9]+)+)*)+\.([A-Za-z]{2,})+$"
 
@@ -190,23 +198,24 @@ echo "* Enter all data correctly. *"
 echo "*****************************"
 echo
 echo
-echo -n "* Username (admin): "
+echo -e "* ${GREEN}Database Username ${YELLOW}(admin)${reset}: "
 read -r MYSQL_USER_INPUT
 [ -z "$MYSQL_USER_INPUT" ] && MYSQL_USER="admin" || MYSQL_USER=$MYSQL_USER_INPUT
 
-echo -n "* Password (dashboardpass): "
+echo -e "* ${GREEN}Database Password ${YELLOW}(dashboardpass)${reset}: "
 read -r MYSQL_PASS_INPUT
 [ -z "$MYSQL_PASS_INPUT" ] && MYSQL_PASS="dashboardpass" || MYSQL_PASS=$MYSQL_PASS_INPUT
 while [ -z "$FQDN" ]; do
-    echo -n "* Set the FQDN of this panel (panel.example.com): "
+    echo -e "* ${GREEN}Set the FQDN of this panel ${YELLOW}(panel.example.com)${reset}: "
     read -r FQDN
-    [ -z "$FQDN" ] && echo "FQDN cannot be empty"
+    [ -z "$FQDN" ] && echo -e "${red}FQDN cannot be empty!"
 done
-email_input EMAIL "Provide the email address that will be used to configure Let's Encrypt: " "Email cannot be empty or invalid"
+email_input EMAIL "Provide the email address that will be used to configure Let's Encrypt: " "print_warning Email cannot be empty or invalid"
 }
 
 #### Exec Ask Informations ####
 ask_informations
+
 
 
 #### Not Ufw ####
@@ -224,10 +233,10 @@ read -r NOT_UFW
 
 if [[ "$NOT_UFW" =~ [Yy] ]]; then
 echo
-echo "* Proceeding with the installation..."
+echo -e "* ${GREEN}Proceeding with the installation..."
 echo
 else
-echo "Installation aborted!"
+echo -e "${red}Installation aborted!"
 exit 1
 fi
 }
@@ -358,8 +367,8 @@ echo
 echo
 echo "****************************************"
 echo "* FQDN: $FQDN"
-echo "* Username: $MYSQL_USER"
-echo "* Password: $MYSQL_PASS"
+echo "* Database Username: $MYSQL_USER"
+echo "* Database Password: $MYSQL_PASS"
 echo "* Email: $EMAIL"
 echo "* Configure UFW: $CONFIGURE_UFW"
 echo "* Configure Let's Encrypt: $CONFIGURE_LETSENCRYPT"
@@ -877,3 +886,20 @@ systemctl start mariadb
 
 #### Exec Create User ####
 create_user
+
+bye() {
+echo "***********************************"
+echo -e "* ${GREEN}The Installation is Finished!"
+echo -e "* Your Informations: ${reset}"
+echo
+echo "* FQDN: $FQDN"
+echo "* Database Username: $MYSQL_USER"
+echo "* Database Password: $MYSQL_PASS"
+echo "* Email: $EMAIL"
+echo "***********************************"
+echo
+echo -e "* ${GREEN}Thanks for using this script, goodbye! ${reset}"
+exit 1
+}
+
+bye
