@@ -161,6 +161,17 @@ print_error() {
   echo ""
 }
 
+print_brake() {
+  for ((n = 0; n < $1; n++)); do
+    echo -n "#"
+  done
+  echo ""
+}
+
+hyperlink() {
+  echo -e "\e]8;;${1}\a${1}\e]8;;\a"
+}
+
 #### Colors ####
 
 GREEN="\e[0;92m"
@@ -202,7 +213,7 @@ echo -e "* ${GREEN}Database Username ${YELLOW}(admin)${reset}: "
 read -r MYSQL_USER_INPUT
 [ -z "$MYSQL_USER_INPUT" ] && MYSQL_USER="admin" || MYSQL_USER=$MYSQL_USER_INPUT
 
-echo -e "* ${GREEN}Database Password ${YELLOW}(dashboardpass)${reset}: "
+echo -s "* ${GREEN}Database Password ${YELLOW}(dashboardpass)${reset}: "
 read -r MYSQL_PASS_INPUT
 [ -z "$MYSQL_PASS_INPUT" ] && MYSQL_PASS="dashboardpass" || MYSQL_PASS=$MYSQL_PASS_INPUT
 while [ -z "$FQDN" ]; do
@@ -368,7 +379,7 @@ echo
 echo "****************************************"
 echo "* FQDN: $FQDN"
 echo "* Database Username: $MYSQL_USER"
-echo "* Database Password: $MYSQL_PASS"
+echo "* Database Password: (censored)"
 echo "* Email: $EMAIL"
 echo "* Configure UFW: $CONFIGURE_UFW"
 echo "* Configure Let's Encrypt: $CONFIGURE_LETSENCRYPT"
@@ -888,15 +899,20 @@ systemctl start mariadb
 create_user
 
 bye() {
-echo "***********************************"
-echo -e "* ${GREEN}The Installation is Finished!"
-echo -e "* Your Informations: ${reset}"
-echo
-echo "* FQDN: $FQDN"
-echo "* Database Username: $MYSQL_USER"
-echo "* Database Password: $MYSQL_PASS"
-echo "* Email: $EMAIL"
-echo "***********************************"
+print_brake 62
+echo -e "* ${GREEN}The Installation is Finished!${reset}"
+echo "*"
+
+[ "$CONFIGURE_LETSENCRYPT" == true ] && echo "* Your panel should be accessible from $(hyperlink "$app_url")"
+[ "$ASSUME_SSL" == true ] && [ "$CONFIGURE_LETSENCRYPT" == false ] && echo "* You have opted in to use SSL, but not via Let's Encrypt automatically. Your panel will not work until SSL has been configured."
+[ "$ASSUME_SSL" == false ] && [ "$CONFIGURE_LETSENCRYPT" == false ] && echo "* Your panel should be accessible from $(hyperlink "$app_url")"
+
+echo "*"
+echo "* Installation is using nginx on $OS"
+echo "* Thank you for using this script."
+[ "$CONFIGURE_FIREWALL" == false ] && echo -e "* ${red}Note${reset}: If you haven't configured the firewall: 80/443 (HTTP/HTTPS) is required to be open!"
+print_brake 62
+
 echo
 echo -e "* ${GREEN}Thanks for using this script, goodbye! ${reset}"
 exit 1
