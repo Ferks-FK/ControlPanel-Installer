@@ -1,4 +1,8 @@
 # ControlPanel.gg-Installer
+<h1 align=center>This script is out of date, please do not use it!</h1>
+<h2 align=center>A new stable version is under development, you can follow it at the link below</h2>
+
+[New Version](https://github.com/Ferks-FK/ControlPanel.gg-Installer/tree/Rewrite_Code)
 
 [![License: GPL v3](https://img.shields.io/github/license/vilhelmprytz/pterodactyl-installer)](LICENSE)
 [![Discord](https://img.shields.io/discord/682342331206074373?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/buDBbSGJmQ)
