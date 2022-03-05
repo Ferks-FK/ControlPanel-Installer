@@ -168,10 +168,6 @@ case "$OS" in
       [ "$OS_VER_MAJOR" == "7" ] && SUPPORTED=true
       [ "$OS_VER_MAJOR" == "8" ] && SUPPORTED=true
     ;;
-    pop)
-      PHP_SOCKET="/run/php/php8.0-fpm.sock"
-      [ "$OS_VER_MAJOR" == "20" ] && SUPPORTED=true
-    ;;
     *)
         SUPPORTED=false
     ;;
