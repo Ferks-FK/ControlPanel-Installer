@@ -665,6 +665,7 @@ echo -e "${GREEN}* The script has finished the installation process!${RESET}"
 
 [ "$CONFIGURE_SSL" == true ] && APP_URL="https://$FQDN"
 [ "$CONFIGURE_SSL" == false ] && APP_URL="http://$FQDN"
+[ "$SETUP_MYSQL_MANUALLY" == true ] && print_warning "Remember to manually configure your mysql by following this guide: ${YELLOW}$(hyperlink "https://controlpanel.gg/docs/Installation/getting-started#database-setup").${RESET}"
 
 echo -e "${GREEN}* To complete the configuration of your panel, go to ${YELLOW}$(hyperlink "$APP_URL/install").${RESET}"
 echo -e "${GREEN}* Thank you for using this script!"
