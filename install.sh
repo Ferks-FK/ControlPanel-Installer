@@ -24,6 +24,7 @@ curl --silent \
 
 # Variables #
 SCRIPT_RELEASE="$(get_release)"
+SUPPORT_LINK="https://discord.gg/buDBbSGJmQ"
 GITHUB_URL="https://raw.githubusercontent.com/Ferks-FK/ControlPanel.gg-Installer/$SCRIPT_RELEASE"
 CONFIGURE_SSL=false
 SETUP_MYSQL_MANUALLY=false
@@ -204,7 +205,7 @@ if [[ "$IP" != "$CHECK_DNS" ]]; then
     echo -n "* Would you like to check again? (y/N): "
     read -r CHECK_DNS_AGAIN
     [[ "$CHECK_DNS_AGAIN" =~ [Yy] ]] && check_fqdn
-    [[ "$CHECK_DNS_AGAIN" == * ]] && print_error "Installation aborted!" && exit 1
+    [[ "$CHECK_DNS_AGAIN" == [Nn] ]] && print_error "Installation aborted!" && exit 1
   else
     print_success "DNS successfully verified!"
 fi
@@ -319,7 +320,8 @@ case "$OS" in
 
     ln -s /etc/nginx/sites-available/controlpanel.conf /etc/nginx/sites-enabled/controlpanel.conf
 
-    systemctl restart nginx
+    if [ "$(systemctl is-active --quiet nginx)" == "inactive" ]; then systemctl start nginx; fi
+    if [ "$(systemctl is-active --quiet nginx)" == "active" ]; then systemctl restart nginx; fi
   ;;
   centos)
     rm -rf /etc/nginx/conf.d/default
@@ -330,7 +332,8 @@ case "$OS" in
 
     sed -i -e "s@<php_socket>@$PHP_SOCKET@g" /etc/nginx/conf.d/controlpanel.conf
 
-    systemctl restart nginx
+    if [ "$(systemctl is-active --quiet nginx)" == "inactive" ]; then systemctl start nginx; fi
+    if [ "$(systemctl is-active --quiet nginx)" == "active" ]; then systemctl restart nginx; fi
 esac
 }
 
@@ -345,9 +348,8 @@ case "$OS" in
     ufw allow http >/dev/null
     ufw allow https >/dev/null
 
-    ufw --force enable
-    ufw --force reload
-    ufw status numbered | sed '/v6/d'
+    ufw --force enable >/dev/null
+    ufw --force reload >/dev/null
   ;;
   centos)
     yum update -y -q
@@ -386,7 +388,7 @@ if [ ! -d "/etc/letsencrypt/live/$FQDN/" ] || [ "$FAILED" == true ]; then
     print_warning "The script failed to generate the SSL certificate automatically, trying alternate command..."
     FAILED=false
     sleep 2
-    [ "$(systemctl is-active --quiet nginx)" == "active" ] && systemctl stop nginx
+    if [ "$(systemctl is-active --quiet nginx)" == "active" ]; then systemctl stop nginx; fi
     
     certbot certonly --standalone -d "$FQDN" || FAILED=true
 
@@ -396,7 +398,7 @@ if [ ! -d "/etc/letsencrypt/live/$FQDN/" ] || [ "$FAILED" == true ]; then
         print_warning "The script failed to generate the certificate, try to do it manually."
     fi
 fi
-[ "$(systemctl is-active --quiet nginx)" == "inactive" ] && systemctl start nginx
+if [ "$(systemctl is-active --quiet nginx)" == "inactive" ]; then systemctl start nginx; fi
 }
 
 configure_crontab() {
@@ -543,6 +545,7 @@ configure_firewall
 [ "$CONFIGURE_SSL" == true ] && configure_ssl
 configure_crontab
 configure_service
+bye
 }
 
 main() {
@@ -623,33 +626,40 @@ read -r TIMEZONE
 echo
 print_brake 75
 echo
+echo -e "* Hostname/FQDN: $FQDN"
+echo -e "* Database Host: $DB_HOST"
+echo -e "* Database Port: $DB_PORT"
+echo -e "* Database Name: $DB_NAME"
+echo -e "* Database User: $DB_USER"
+echo -e "* Database Pass: (censored)"
+echo -e "* Time-Zone: $TIMEZONE"
+[ "$CONFIGURE_SSL" == true ] && echo -e "* Configure SSL: $CONFIGURE_SSL"
+echo
+print_brake 75
+echo
+
+# Write the information to a log #
 {
   echo -e "* Hostname/FQDN: $FQDN"
   echo -e "* Database Host: $DB_HOST"
   echo -e "* Database Port: $DB_PORT"
   echo -e "* Database Name: $DB_NAME"
   echo -e "* Database User: $DB_USER"
-  echo -e "* Database Pass: (censored)"
+  echo -e "* Database Pass: $DB_PASS"
+  echo ""
+  echo "* After using this file, delete it immediately!"
 } >> /var/log/controlpanel.info
-echo -e "* Time-Zone: $TIMEZONE"
-[ "$CONFIGURE_SSL" == true ] && echo -e "* Configure SSL: $CONFIGURE_SSL"
-echo
-print_brake 75
-echo
-sed -i -e "s@(censored)@$DB_PASS@g" /var/log/controlpanel.info
-echo "" >> /var/log/controlpanel.info
-echo "* After using this file, delete it immediately!" >> /var/log/controlpanel.info
 
 # Confirm all the choices #
 echo -n "* Initial settings complete, do you want to continue to the installation? (y/N): "
 read -r CONTINUE_INSTALL
 [[ "$CONTINUE_INSTALL" =~ [Yy] ]] && install_controlpanel
-[[ "$CONTINUE_INSTALL" == * ]] && print_error "Installation aborted!" && exit 1
+[[ "$CONTINUE_INSTALL" == [Nn] ]] && print_error "Installation aborted!" && exit 1
 }
 
 bye() {
 echo
-print_brake 70
+print_brake 90
 echo
 echo -e "${GREEN}* The script has finished the installation process!${RESET}"
 
@@ -657,11 +667,12 @@ echo -e "${GREEN}* The script has finished the installation process!${RESET}"
 [ "$CONFIGURE_SSL" == false ] && APP_URL="http://$FQDN"
 [ "$SETUP_MYSQL_MANUALLY" == true ] && print_warning "Remember to manually configure your mysql by following this guide: ${YELLOW}$(hyperlink "https://controlpanel.gg/docs/Installation/getting-started#database-setup").${RESET}"
 
-echo -e "${GREEN}* To complete the configuration of your panel, go to ${YELLOW}$(hyperlink "$APP_URL/install").${RESET}"
+echo -e "${GREEN}* To complete the configuration of your panel, go to ${YELLOW}$(hyperlink "$APP_URL/install")${RESET}"
 echo -e "${GREEN}* Thank you for using this script!"
 echo -e "* Support Group: ${YELLOW}$(hyperlink "$SUPPORT_LINK")${RESET}"
-echo -e "${GREEN}HINT${RESET}: If you have questions about the information that is requested on the installation page\nall the necessary information about it is written in: ($YELLOW/var/log/controlpanel.info$RESET)."
-print_brake 70
+echo -e "* ${GREEN}HINT${RESET}: If you have questions about the information that is requested on the installation page\nall the necessary information about it is written in: ($YELLOW/var/log/controlpanel.info$RESET)."
+echo
+print_brake 90
 echo
 }
 
