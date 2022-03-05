@@ -48,12 +48,6 @@ print_error() {
   echo ""
 }
 
-print_hint() {
-  echo ""
-  echo -e "* ${GREEN}HINT${RESET}: $1"
-  echo ""
-}
-
 print() {
   echo ""
   echo -e "* ${GREEN}$1${RESET}"
