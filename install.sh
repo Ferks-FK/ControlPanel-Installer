@@ -17,7 +17,7 @@ set -e
 get_release() {
 curl --silent \
   -H "Accept: application/vnd.github.v3+json" \
-  https://api.github.com/repos/Ferks-FK/ControlPanel.gg-Installer/releases/latest |
+  https://api.github.com/repos/Ferks-FK/ControlPanel-Installer/releases/latest |
   grep '"tag_name":' |
   sed -E 's/.*"([^"]+)".*/\1/'
 }
