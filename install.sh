@@ -49,6 +49,12 @@ print_error() {
   echo ""
 }
 
+print_success() {
+  echo ""
+  echo -e "* ${GREEN}SUCCESS${RESET}: $1"
+  echo ""
+}
+
 print() {
   echo ""
   echo -e "* ${GREEN}$1${RESET}"
