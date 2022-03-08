@@ -27,12 +27,15 @@ SCRIPT_RELEASE="$(get_release)"
 SUPPORT_LINK="https://discord.gg/buDBbSGJmQ"
 WIKI_LINK="https://github.com/Ferks-FK/ControlPanel-Installer/wiki"
 GITHUB_URL="https://raw.githubusercontent.com/Ferks-FK/ControlPanel.gg-Installer/$SCRIPT_RELEASE"
-CLIENT_VERSION="$(grep "'version'" "/var/www/controlpanel/config/app.php" | cut -c18-25 | sed "s/[',]//g")"
-LATEST_VERSION="$(curl -s https://raw.githubusercontent.com/ControlPanel-gg/dashboard/main/config/app.php | grep "'version'" | cut -c18-25 | sed "s/[',]//g")"
 CONFIGURE_SSL=false
 SETUP_MYSQL_MANUALLY=false
 FQDN=""
 PTERO_DOMAIN="-"
+
+update_variables() {
+CLIENT_VERSION="$(grep "'version'" "/var/www/controlpanel/config/app.php" | cut -c18-25 | sed "s/[',]//g")"
+LATEST_VERSION="$(curl -s https://raw.githubusercontent.com/ControlPanel-gg/dashboard/main/config/app.php | grep "'version'" | cut -c18-25 | sed "s/[',]//g")"
+}
 
 # Visual Functions #
 print_brake() {
@@ -145,7 +148,7 @@ php artisan down
 git stash
 git pull
 
-composer install --no-dev --optimize-autoloader
+COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader
 
 php artisan migrate --seed --force
 
@@ -585,19 +588,22 @@ bye
 
 main() {
 # Check if it is already installed and check the version #
-if [ -d "/var/www/controlpanel" ] && [ "$CLIENT_VERSION" != "$LATEST_VERSION" ]; then
-    print_warning "You already have the panel installed."
-    echo -ne "* The script detected that the version of your panel is ${YELLOW}$CLIENT_VERSION${RESET}, the latest version of the panel is ${YELLOW}$LATEST_VERSION${RESET}, would you like to upgrade? (y/N): "
-    read -r UPGRADE_PANEL
-    if [[ "$UPGRADE_PANEL" =~ [Yy] ]]; then
-        only_upgrade_panel
+if [ -d "/var/www/controlpanel" ]; then
+    update_variables
+    if [ "$CLIENT_VERSION" != "$LATEST_VERSION" ]; then
+      print_warning "You already have the panel installed."
+      echo -ne "* The script detected that the version of your panel is ${YELLOW}$CLIENT_VERSION${RESET}, the latest version of the panel is ${YELLOW}$LATEST_VERSION${RESET}, would you like to upgrade? (y/N): "
+      read -r UPGRADE_PANEL
+      if [[ "$UPGRADE_PANEL" =~ [Yy] ]]; then
+          only_upgrade_panel
+        else
+          print "Ok, bye..."
+          exit 1
+      fi
       else
-        print "Ok, coming out..."
+        print_warning "The panel is already installed, aborting..."
         exit 1
     fi
-  else
-    print_warning "The panel is already installed, aborting..."
-    exit 1
 fi
 
 # Check if pterodactyl is installed #
@@ -728,7 +734,7 @@ echo -e "${GREEN}* The script has finished the installation process!${RESET}"
 echo -e "${GREEN}* To complete the configuration of your panel, go to ${YELLOW}$(hyperlink "$APP_URL/install")${RESET}"
 echo -e "${GREEN}* Thank you for using this script!"
 echo -e "* Wiki: ${YELLOW}$(hyperlink "$WIKI_LINK")${RESET}"
-echo -e "* Support Group: ${YELLOW}$(hyperlink "$SUPPORT_LINK")${RESET}"
+echo -e "${GREEN}* Support Group: ${YELLOW}$(hyperlink "$SUPPORT_LINK")${RESET}"
 echo -e "${GREEN}*${RESET} If you have questions about the information that is requested on the installation page\nall the necessary information about it is written in: ($YELLOW/var/log/controlpanel.info$RESET)."
 echo
 print_brake 90
