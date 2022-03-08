@@ -159,7 +159,7 @@ php artisan queue:restart
 
 php artisan up
 
-print "Your panel has been successfully updated to version ${YELLOW}${LATEST_VERSION}${RESET}"
+print "Your panel has been successfully updated to version ${YELLOW}${LATEST_VERSION}${RESET}."
 exit 1
 }
 
