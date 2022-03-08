@@ -25,9 +25,12 @@ curl --silent \
 # Variables #
 SCRIPT_RELEASE="$(get_release)"
 SUPPORT_LINK="https://discord.gg/buDBbSGJmQ"
+WIKI_LINK="https://github.com/Ferks-FK/ControlPanel-Installer/wiki"
 GITHUB_URL="https://raw.githubusercontent.com/Ferks-FK/ControlPanel.gg-Installer/$SCRIPT_RELEASE"
 CONFIGURE_SSL=false
 SETUP_MYSQL_MANUALLY=false
+FQDN=""
+PTERO_DOMAIN="-"
 
 # Visual Functions #
 print_brake() {
@@ -273,7 +276,6 @@ sed -i -e "s@<db_pass>@$DB_PASS@g" /var/www/controlpanel/.env.example
 configure_database() {
 print "Configuring Database..."
 
-mysql -u root -e "show databases;" &>/dev/null
 if mysql -u root -e "show databases;" &>/dev/null; then
     mysql -u root -e "CREATE DATABASE ${DB_NAME};"
     mysql -u root -e "CREATE USER '${DB_USER}'@'${DB_HOST}' IDENTIFIED BY '${DB_PASS}';"
@@ -285,7 +287,6 @@ if mysql -u root -e "show databases;" &>/dev/null; then
     read -r MYSQL_ROOT_PASS
     if [[ "$MYSQL_ROOT_PASS" =~ [Yy] ]]; then
         password_input MYSQL_ROOT_PASS "Enter your mysql password: " "Password cannot by empty!"
-        mysql -u root -p"$MYSQL_ROOT_PASS" -e "show databases;" &>/dev/null
         if mysql -u root -p"$MYSQL_ROOT_PASS" -e "show databases;" &>/dev/null; then
             mysql -u root -p"$MYSQL_ROOT_PASS" -e "CREATE DATABASE ${DB_NAME};"
             mysql -u root -p"$MYSQL_ROOT_PASS" -e "CREATE USER '${DB_USER}'@'${DB_HOST}' IDENTIFIED BY '${DB_PASS}';"
@@ -564,14 +565,27 @@ fi
 # Check if pterodactyl is installed #
 if [ ! -d "/var/www/pterodactyl" ]; then
   print_warning "An installation of pterodactyl was not found in the directory $YELLOW/var/www/pterodactyl${RESET}"
-  echo -e "* ${GREEN}EXAMPLE${RESET}: /var/www/myptero"
-  echo -ne "* Manually enter the directory where your pterodactyl is installed: "
+  echo -ne "* Is your pterodactyl panel installed on this machine? (y/N): "
   read -r PTERO_DIR
-  if [ -f "$PTERO_DIR/config/app.php" ]; then
-      print "Pterodactyl was found, continuing..."
+  if [[ "$PTERO_DIR" =~ [Yy] ]]; then
+      echo -e "* ${GREEN}EXAMPLE${RESET}: /var/www/myptero"
+      echo -ne "* Enter the directory from where your pterodactyl panel is installed: "
+      read -r PTERO_DIR
+      if [ -f "$PTERO_DIR/config/app.php" ]; then
+          print "Pterodactyl was found, continuing..."
+        else
+          print_error "Pterodactyl not found, running script again..."
+          main
+      fi
     else
-      print_error "Pterodactyl not found, running script again..."
-      main
+      echo -ne "* Please enter the domain name of your pterodactyl panel: "
+      read -r PTERO_DOMAIN
+      if curl -Is "$PTERO_DOMAIN" &>/dev/null; then
+          print "Your pterodactyl panel has been pinged successfully."
+        else
+          print_warning "Unable to ping your pterodactyl panel, make sure your domain is correct, and try again"
+          main
+      fi
   fi
 fi
 
@@ -582,11 +596,11 @@ check_distro
 check_compatibility
 
 # Set FQDN for panel #
-FQDN=""
-while [ -z "$FQDN" ]; do
+while [ -z "$FQDN" ] || [ "$FQDN" == "$PTERO_DOMAIN" ]; do
   echo -ne "* Set the Hostname/FQDN for panel (${YELLOW}panel.example.com${RESET}): "
   read -r FQDN
   [ -z "$FQDN" ] && print_error "FQDN cannot be empty"
+  [ "$FQDN" == "$PTERO_DOMAIN" ] && print_error "The domain of this panel cannot be the same as the pterodactyl panel"
 done
 
 # Install the packages to check FQDN and ask about SSL only if FQDN is a string #
@@ -675,8 +689,9 @@ echo -e "${GREEN}* The script has finished the installation process!${RESET}"
 
 echo -e "${GREEN}* To complete the configuration of your panel, go to ${YELLOW}$(hyperlink "$APP_URL/install")${RESET}"
 echo -e "${GREEN}* Thank you for using this script!"
+echo -e "* Wiki: ${YELLOW}$(hyperlink "$WIKI_LINK")${RESET}"
 echo -e "* Support Group: ${YELLOW}$(hyperlink "$SUPPORT_LINK")${RESET}"
-echo -e "* ${GREEN}HINT${RESET}: If you have questions about the information that is requested on the installation page\nall the necessary information about it is written in: ($YELLOW/var/log/controlpanel.info$RESET)."
+echo -e "${GREEN}*${RESET} If you have questions about the information that is requested on the installation page\nall the necessary information about it is written in: ($YELLOW/var/log/controlpanel.info$RESET)."
 echo
 print_brake 90
 echo
