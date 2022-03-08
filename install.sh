@@ -31,7 +31,6 @@ CLIENT_VERSION="$(grep "'version'" "/var/www/controlpanel/config/app.php" | cut 
 LATEST_VERSION="$(curl -s https://raw.githubusercontent.com/ControlPanel-gg/dashboard/main/config/app.php | grep "'version'" | cut -c18-25 | sed "s/[',]//g")"
 CONFIGURE_SSL=false
 SETUP_MYSQL_MANUALLY=false
-UPGRADE_PANEL=false
 FQDN=""
 PTERO_DOMAIN="-"
 
@@ -588,7 +587,7 @@ main() {
 # Check if it is already installed and check the version #
 if [ -d "/var/www/controlpanel" ] && [ "$CLIENT_VERSION" != "$LATEST_VERSION" ]; then
     print_warning "You already have the panel installed."
-    echo -n "The script detected that the version of your panel is $CLIENT_VERSION, the latest version of the panel is $LATEST_VERSION, would you like to upgrade? (y/N): "
+    echo -ne "* The script detected that the version of your panel is ${YELLOW}$CLIENT_VERSION${RESET}, the latest version of the panel is ${YELLOW}$LATEST_VERSION${RESET}, would you like to upgrade? (y/N): "
     read -r UPGRADE_PANEL
     if [[ "$UPGRADE_PANEL" =~ [Yy] ]]; then
         only_upgrade_panel
