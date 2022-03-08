@@ -27,8 +27,11 @@ SCRIPT_RELEASE="$(get_release)"
 SUPPORT_LINK="https://discord.gg/buDBbSGJmQ"
 WIKI_LINK="https://github.com/Ferks-FK/ControlPanel-Installer/wiki"
 GITHUB_URL="https://raw.githubusercontent.com/Ferks-FK/ControlPanel.gg-Installer/$SCRIPT_RELEASE"
+CLIENT_VERSION="$(grep "'version'" "/var/www/controlpanel/config/app.php" | cut -c18-25 | sed "s/[',]//g")"
+LATEST_VERSION="$(curl -s https://raw.githubusercontent.com/ControlPanel-gg/dashboard/main/config/app.php | grep "'version'" | cut -c18-25 | sed "s/[',]//g")"
 CONFIGURE_SSL=false
 SETUP_MYSQL_MANUALLY=false
+UPGRADE_PANEL=false
 FQDN=""
 PTERO_DOMAIN="-"
 
@@ -132,6 +135,32 @@ check_distro() {
 
   OS=$(echo "$OS" | awk '{print tolower($0)}')
   OS_VER_MAJOR=$(echo "$OS_VER" | cut -d. -f1)
+}
+
+only_upgrade_panel() {
+print "Updating your panel, please wait..."
+
+cd /var/www/controlpanel
+php artisan down
+
+git stash
+git pull
+
+composer install --no-dev --optimize-autoloader
+
+php artisan migrate --seed --force
+
+php artisan view:clear
+php artisan config:clear
+
+set_permissions
+
+php artisan queue:restart
+
+php artisan up
+
+print "Your panel has been successfully updated to version ${YELLOW}${LATEST_VERSION}${RESET}"
+exit 1
 }
 
 enable_services_debian_based() {
@@ -556,10 +585,20 @@ bye
 }
 
 main() {
-# Check if is already installed #
-if [ -d "/var/www/controlpanel" ]; then
-  print_warning "You have already installed this panel, aborting..."
-  exit 1
+# Check if it is already installed and check the version #
+if [ -d "/var/www/controlpanel" ] && [ "$CLIENT_VERSION" != "$LATEST_VERSION" ]; then
+    print_warning "You already have the panel installed."
+    echo -n "The script detected that the version of your panel is $CLIENT_VERSION, the latest version of the panel is $LATEST_VERSION, would you like to upgrade? (y/N): "
+    read -r UPGRADE_PANEL
+    if [[ "$UPGRADE_PANEL" =~ [Yy] ]]; then
+        only_upgrade_panel
+      else
+        print "Ok, coming out..."
+        exit 1
+    fi
+  else
+    print_warning "The panel is already installed, aborting..."
+    exit 1
 fi
 
 # Check if pterodactyl is installed #
