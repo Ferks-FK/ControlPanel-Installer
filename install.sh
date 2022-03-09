@@ -398,12 +398,7 @@ case "$OS" in
   ;;
 esac
 
-if [ "$(systemctl is-active --quiet nginx)" == "inactive" ] || [ "$(systemctl is-active --quiet nginx)" == "failed" ]; then
-  systemctl start nginx
-fi
-if [ "$(systemctl is-active --quiet nginx)" == "active" ]; then
-  systemctl restart nginx
-fi
+systemctl restart nginx
 }
 
 configure_firewall() {
