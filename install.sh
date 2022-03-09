@@ -27,6 +27,7 @@ SCRIPT_RELEASE="$(get_release)"
 SUPPORT_LINK="https://discord.gg/buDBbSGJmQ"
 WIKI_LINK="https://github.com/Ferks-FK/ControlPanel-Installer/wiki"
 GITHUB_URL="https://raw.githubusercontent.com/Ferks-FK/ControlPanel.gg-Installer/$SCRIPT_RELEASE"
+RANDOM_PASSWORD="$(tr -dc 'A-Za-z0-9!"#$%&()*+,-./:;<=>?@[\]^_`{|}~' </dev/urandom | head -c 64)"
 SETUP_MYSQL_MANUALLY=false
 FQDN=""
 PTERO_DOMAIN="-"
@@ -77,6 +78,26 @@ GREEN="\e[0;92m"
 YELLOW="\033[1;33m"
 RED='\033[0;31m'
 RESET="\e[0m"
+
+EMAIL_RX="^(([A-Za-z0-9]+((\.|\-|\_|\+)?[A-Za-z0-9]?)*[A-Za-z0-9]+)|[A-Za-z0-9]+)@(([A-Za-z0-9]+)+((\.|\-|\_)?([A-Za-z0-9]+)+)*)+\.([A-Za-z]{2,})+$"
+
+valid_email() {
+  [[ $1 =~ ${EMAIL_RX} ]]
+}
+
+email_input() {
+  local __resultvar=$1
+  local result=''
+
+  while ! valid_email "$result"; do
+    echo -n "* ${2}"
+    read -r result
+
+    valid_email "$result" || print_error "${3}"
+  done
+
+  eval "$__resultvar="'$result'""
+}
 
 password_input() {
   local __resultvar=$1
@@ -168,12 +189,13 @@ exit 1
 enable_services_debian_based() {
 systemctl enable mariadb --now
 systemctl enable redis-server --now
+systemctl enable nginx
 }
 
 enable_services_centos_based() {
 systemctl enable mariadb --now
-systemctl enable nginx --now
 systemctl enable redis --now
+systemctl enable nginx
 }
 
 allow_selinux() {
@@ -227,10 +249,10 @@ print "Downloading packages required for FQDN validation..."
 
 case "$OS" in
   debian | ubuntu)
-    apt-get update -y && apt-get install -y dnsutils
+    apt-get update -y -qq && apt-get install -y -qq dnsutils
   ;;
   centos)
-    yum update -y && yum install -y bind-utils
+    yum update -y -q && yum install -y -q bind-utils
   ;;
 esac
 }
@@ -256,9 +278,14 @@ echo -ne "* Would you like to configure ssl for your domain? (y/N): "
 read -r CONFIGURE_SSL
 if [[ "$CONFIGURE_SSL" == [Yy] ]]; then
     CONFIGURE_SSL=true
+    ask_email
   else
     CONFIGURE_SSL=false
 fi
+}
+
+ask_email() {
+email_input EMAIL "Enter your email address to create the SSL certificate for your domain: " "Email cannot by empty or invalid!"
 }
 
 install_composer() {
@@ -386,19 +413,19 @@ case "$OS" in
   debian | ubuntu)
     apt-get install -qq -y ufw
 
-    ufw allow ssh >/dev/null
-    ufw allow http >/dev/null
-    ufw allow https >/dev/null
+    ufw allow ssh &>/dev/null
+    ufw allow http &>/dev/null
+    ufw allow https &>/dev/null
 
-    ufw --force enable >/dev/null
-    ufw --force reload >/dev/null
+    ufw --force enable &>/dev/null
+    ufw --force reload &>/dev/null
   ;;
   centos)
     yum update -y -q
 
-    yum -y -q install firewalld >/dev/null
+    yum -y -q install firewalld &>/dev/null
 
-    systemctl --now enable firewalld >/dev/null
+    systemctl --now enable firewalld &>/dev/null
 
     firewall-cmd --add-service=http --permanent -q
     firewall-cmd --add-service=https --permanent -q
@@ -413,13 +440,13 @@ print "Configuring SSL..."
 
 FAILED=false
 
-if [ "$(systemctl is-active --quiet nginx)" == "active" ]; then
-  systemctl stop nginx
+if [ "$(systemctl is-active --quiet nginx)" == "inactive" ] || [ "$(systemctl is-active --quiet nginx)" == "failed" ]; then
+  systemctl start nginx
 fi
 
 case "$OS" in
   debian | ubuntu)
-    apt-get update -y -qq && apt-get upgrade -y
+    apt-get update -y -qq && apt-get upgrade -y -qq
     apt-get install -y -qq certbot && apt-get install -y -qq python3-certbot-nginx
   ;;
   centos)
@@ -428,23 +455,23 @@ case "$OS" in
   ;;
 esac
 
-certbot certonly --nginx -d "$FQDN" &>/dev/null || FAILED=true
+certbot certonly --nginx --no-eff-email --email "$EMAIL" -d "$FQDN" || FAILED=true
 
 if [ ! -d "/etc/letsencrypt/live/$FQDN/" ] || [ "$FAILED" == true ]; then
-    print_warning "The script failed to generate the SSL certificate automatically, trying alternative command..."
-    FAILED=false
-    sleep 2
-    
-    certbot certonly --standalone -d "$FQDN" &>/dev/null || FAILED=true
+  if [ "$(systemctl is-active --quiet nginx)" == "active" ]; then
+    systemctl stop nginx
+  fi
+  print_warning "The script failed to generate the SSL certificate automatically, trying alternative command..."
+  FAILED=false
+  sleep 2
 
-    if [ -d "/etc/letsencrypt/live/$FQDN/" ] || [ "$FAILED" == false ]; then
-        print "The script was able to successfully generate the SSL certificate!"
-      else
-        print_warning "The script failed to generate the certificate, try to do it manually."
-    fi
-fi
-if [ "$(systemctl is-active --quiet nginx)" == "inactive" ] || [ "$(systemctl is-active --quiet nginx)" == "failed" ]; then
-  systemctl start nginx
+  certbot certonly --standalone --no-eff-email --email "$EMAIL" -d "$FQDN" || FAILED=true
+
+  if [ -d "/etc/letsencrypt/live/$FQDN/" ] || [ "$FAILED" == false ]; then
+      print "The script was able to successfully generate the SSL certificate!"
+    else
+      print_warning "The script failed to generate the certificate, try to do it manually."
+  fi
 fi
 }
 
@@ -587,11 +614,11 @@ download_files
 set_permissions
 configure_environment
 configure_database
-configure_webserver
 configure_firewall
 configure_crontab
 configure_service
 [ "$CONFIGURE_SSL" == true ] && configure_ssl
+configure_webserver
 bye
 }
 
@@ -684,10 +711,7 @@ read -r DB_USER
 [ -z "$DB_USER" ] && DB_USER="dashboarduser"
 
 # Set pass of the database #
-DB_PASS=""
-while [ -z "$DB_PASS" ]; do
-  password_input DB_PASS "Enter the password of the database: " "Password cannot by empty!"
-done
+password_input DB_PASS "Enter the password of the database (Enter for random password): " "Password cannot by empty!" "$RANDOM_PASSWORD"
 
 # Ask Time-Zone #
 echo -e "* List of valid time-zones here: ${YELLOW}$(hyperlink "http://php.net/manual/en/timezones.php")${RESET}"
