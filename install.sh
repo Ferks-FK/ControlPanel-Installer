@@ -27,7 +27,6 @@ SCRIPT_RELEASE="$(get_release)"
 SUPPORT_LINK="https://discord.gg/buDBbSGJmQ"
 WIKI_LINK="https://github.com/Ferks-FK/ControlPanel-Installer/wiki"
 GITHUB_URL="https://raw.githubusercontent.com/Ferks-FK/ControlPanel.gg-Installer/$SCRIPT_RELEASE"
-CONFIGURE_SSL=false
 SETUP_MYSQL_MANUALLY=false
 FQDN=""
 PTERO_DOMAIN="-"
@@ -148,6 +147,7 @@ php artisan down
 git stash
 git pull
 
+[ "$OS" == "centos" ] && export PATH=/usr/local/bin:$PATH
 COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader
 
 php artisan migrate --seed --force
@@ -255,7 +255,9 @@ ask_ssl() {
 echo -ne "* Would you like to configure ssl for your domain? (y/N): "
 read -r CONFIGURE_SSL
 if [[ "$CONFIGURE_SSL" == [Yy] ]]; then
-  CONFIGURE_SSL=true
+    CONFIGURE_SSL=true
+  else
+    CONFIGURE_SSL=false
 fi
 }
 
@@ -357,9 +359,6 @@ case "$OS" in
     [ "$OS" == "debian" ] && [ "$OS_VER_MAJOR" == "9" ] && sed -i -e 's/ TLSv1.3//' /etc/nginx/sites-available/controlpanel.conf
 
     ln -s /etc/nginx/sites-available/controlpanel.conf /etc/nginx/sites-enabled/controlpanel.conf
-
-    if [ "$(systemctl is-active --quiet nginx)" == "inactive" ]; then systemctl start nginx; fi
-    if [ "$(systemctl is-active --quiet nginx)" == "active" ]; then systemctl restart nginx; fi
   ;;
   centos)
     rm -rf /etc/nginx/conf.d/default
@@ -369,10 +368,15 @@ case "$OS" in
     sed -i -e "s@<domain>@$FQDN@g" /etc/nginx/conf.d/controlpanel.conf
 
     sed -i -e "s@<php_socket>@$PHP_SOCKET@g" /etc/nginx/conf.d/controlpanel.conf
-
-    if [ "$(systemctl is-active --quiet nginx)" == "inactive" ]; then systemctl start nginx; fi
-    if [ "$(systemctl is-active --quiet nginx)" == "active" ]; then systemctl restart nginx; fi
+  ;;
 esac
+
+if [ "$(systemctl is-active --quiet nginx)" == "inactive" ] || [ "$(systemctl is-active --quiet nginx)" == "failed" ]; then
+  systemctl start nginx
+fi
+if [ "$(systemctl is-active --quiet nginx)" == "active" ]; then
+  systemctl restart nginx
+fi
 }
 
 configure_firewall() {
@@ -409,6 +413,10 @@ print "Configuring SSL..."
 
 FAILED=false
 
+if [ "$(systemctl is-active --quiet nginx)" == "active" ]; then
+  systemctl stop nginx
+fi
+
 case "$OS" in
   debian | ubuntu)
     apt-get update -y -qq && apt-get upgrade -y
@@ -420,15 +428,14 @@ case "$OS" in
   ;;
 esac
 
-certbot certonly --nginx -d "$FQDN" || FAILED=true
+certbot certonly --nginx -d "$FQDN" &>/dev/null || FAILED=true
 
 if [ ! -d "/etc/letsencrypt/live/$FQDN/" ] || [ "$FAILED" == true ]; then
-    print_warning "The script failed to generate the SSL certificate automatically, trying alternate command..."
+    print_warning "The script failed to generate the SSL certificate automatically, trying alternative command..."
     FAILED=false
     sleep 2
-    if [ "$(systemctl is-active --quiet nginx)" == "active" ]; then systemctl stop nginx; fi
     
-    certbot certonly --standalone -d "$FQDN" || FAILED=true
+    certbot certonly --standalone -d "$FQDN" &>/dev/null || FAILED=true
 
     if [ -d "/etc/letsencrypt/live/$FQDN/" ] || [ "$FAILED" == false ]; then
         print "The script was able to successfully generate the SSL certificate!"
@@ -436,7 +443,9 @@ if [ ! -d "/etc/letsencrypt/live/$FQDN/" ] || [ "$FAILED" == true ]; then
         print_warning "The script failed to generate the certificate, try to do it manually."
     fi
 fi
-if [ "$(systemctl is-active --quiet nginx)" == "inactive" ]; then systemctl start nginx; fi
+if [ "$(systemctl is-active --quiet nginx)" == "inactive" ] || [ "$(systemctl is-active --quiet nginx)" == "failed" ]; then
+  systemctl start nginx
+fi
 }
 
 configure_crontab() {
@@ -580,9 +589,9 @@ configure_environment
 configure_database
 configure_webserver
 configure_firewall
-[ "$CONFIGURE_SSL" == true ] && configure_ssl
 configure_crontab
 configure_service
+[ "$CONFIGURE_SSL" == true ] && configure_ssl
 bye
 }
 
@@ -697,7 +706,7 @@ echo -e "* Database Name: $DB_NAME"
 echo -e "* Database User: $DB_USER"
 echo -e "* Database Pass: (censored)"
 echo -e "* Time-Zone: $TIMEZONE"
-[ "$CONFIGURE_SSL" == true ] && echo -e "* Configure SSL: $CONFIGURE_SSL"
+echo -e "* Configure SSL: $CONFIGURE_SSL"
 echo
 print_brake 75
 echo
