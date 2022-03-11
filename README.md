@@ -9,8 +9,9 @@ This script is not associated with the official project.
 <h1 align="center">Features</h1>
 
 - Automatic installation of the ControlPanel (dependencies, database, cronjob, nginx).
-- Panel: automatic configuration of Let's Encrypt.
-- Panel: automatic configuration of UFW (firewall for Ubuntu/Debian).
+- Automatic configuration of UFW (firewall for Ubuntu/Debian).
+- (Optional) automatic configuration of Let's Encrypt.
+- (Optional) Automatic panel upgrade to a newer version.
 
 <h1 align="center">Support</h1>
 
