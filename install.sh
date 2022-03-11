@@ -575,7 +575,7 @@ if [ "$OS_VER_MAJOR" == "7" ]; then
     yum install -y mariadb mariadb-server
 
     # Install dependencies
-    yum install -y php php-common php-fpm php-cli php-json php-mysqlnd php-gd php-mbstring php-pdo php-zip php-bcmath php-dom php-opcache php-intl
+    yum install -y php php-common php-fpm php-cli php-json php-mysqlnd php-gd php-mbstring php-pdo php-zip php-bcmath php-dom php-opcache php-intl mariadb-server nginx curl tar zip unzip git redis
     yum update -y
 fi
 
