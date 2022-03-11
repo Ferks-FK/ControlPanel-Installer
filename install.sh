@@ -27,10 +27,9 @@ SCRIPT_RELEASE="$(get_release)"
 SUPPORT_LINK="https://discord.gg/buDBbSGJmQ"
 WIKI_LINK="https://github.com/Ferks-FK/ControlPanel-Installer/wiki"
 GITHUB_URL="https://raw.githubusercontent.com/Ferks-FK/ControlPanel.gg-Installer/$SCRIPT_RELEASE"
-RANDOM_PASSWORD="$(tr -dc 'A-Za-z0-9!"#$%&()*+,-./:;<=>?@[\]^_`{|}~' </dev/urandom | head -c 64)"
+RANDOM_PASSWORD="$(openssl rand -base64 32)"
 SETUP_MYSQL_MANUALLY=false
 FQDN=""
-PTERO_DOMAIN="-"
 
 update_variables() {
 CLIENT_VERSION="$(grep "'version'" "/var/www/controlpanel/config/app.php" | cut -c18-25 | sed "s/[',]//g")"
@@ -249,10 +248,10 @@ print "Downloading packages required for FQDN validation..."
 
 case "$OS" in
   debian | ubuntu)
-    apt-get update -y -qq && apt-get install -y -qq dnsutils
+    apt-get update -y &>/dev/null && apt-get install -y dnsutils wget &>/dev/null
   ;;
   centos)
-    yum update -y -q && yum install -y -q bind-utils
+    yum update -y -q && yum install -y -q bind-utils wget
   ;;
 esac
 }
@@ -262,6 +261,22 @@ print "Checking FQDN..."
 sleep 2
 IP="$(curl -s https://ipecho.net/plain ; echo)"
 CHECK_DNS="$(dig +short @8.8.8.8 "$FQDN" | tail -n1)"
+if [ -z "$IP" ]; then
+  IP="$(wget -qO- ifconfig.co/ip)"
+fi
+if curl -Is "$FQDN" &>/dev/null; then
+  FQDN=""
+  print_warning "It looks like the domain you entered is already being used by some other application."
+  while curl -Is "$FQDN" &>/dev/null || [ -z "$FQDN" ]; do
+    echo -n "* Enter another domain that is not in use: "
+    read -r FQDN
+    [ -z "$FQDN" ] && "FQDN cannot by empty!"
+    curl -Is "$FQDN" &>/dev/null && print_warning "Domain already in use!"
+  done
+  IP="$(curl -s https://ipecho.net/plain ; echo)"
+  CHECK_DNS="$(dig +short @8.8.8.8 "$FQDN" | tail -n1)"
+  if [ -z "$IP" ]; then IP="$(wget -qO- ifconfig.co/ip)"; fi
+fi
 if [[ "$IP" != "$CHECK_DNS" ]]; then
     print_error "Your FQDN (${YELLOW}$FQDN${RESET}) is not pointing to the public IP (${YELLOW}$IP${RESET}), please make sure your domain is set correctly."
     echo -n "* Would you like to check again? (y/N): "
@@ -278,14 +293,10 @@ echo -ne "* Would you like to configure ssl for your domain? (y/N): "
 read -r CONFIGURE_SSL
 if [[ "$CONFIGURE_SSL" == [Yy] ]]; then
     CONFIGURE_SSL=true
-    ask_email
+    email_input EMAIL "Enter your email address to create the SSL certificate for your domain: " "Email cannot by empty or invalid!"
   else
     CONFIGURE_SSL=false
 fi
-}
-
-ask_email() {
-email_input EMAIL "Enter your email address to create the SSL certificate for your domain: " "Email cannot by empty or invalid!"
 }
 
 install_composer() {
@@ -398,7 +409,16 @@ case "$OS" in
   ;;
 esac
 
-systemctl restart nginx
+# Kill nginx if it is listening on port 80 before it starts, fixed a port usage bug.
+if netstat -tlpn | grep 80 &>/dev/null; then
+  killall nginx
+fi
+
+if [ "$(systemctl is-active --quiet nginx)" == "active" ]; then
+    systemctl restart nginx
+  else
+    systemctl start nginx
+fi
 }
 
 configure_firewall() {
@@ -450,23 +470,24 @@ case "$OS" in
   ;;
 esac
 
-certbot certonly --nginx --no-eff-email --email "$EMAIL" -d "$FQDN" || FAILED=true
+certbot certonly --nginx --non-interactive --agree-tos --quiet --no-eff-email --email "$EMAIL" -d "$FQDN" || FAILED=true
 
 if [ ! -d "/etc/letsencrypt/live/$FQDN/" ] || [ "$FAILED" == true ]; then
-  if [ "$(systemctl is-active --quiet nginx)" == "active" ]; then
-    systemctl stop nginx
-  fi
-  print_warning "The script failed to generate the SSL certificate automatically, trying alternative command..."
-  FAILED=false
-  sleep 2
+    if [ "$(systemctl is-active --quiet nginx)" == "active" ]; then
+      systemctl stop nginx
+    fi
+    print_warning "The script failed to generate the SSL certificate automatically, trying alternative command..."
+    FAILED=false
 
-  certbot certonly --standalone --no-eff-email --email "$EMAIL" -d "$FQDN" || FAILED=true
+    certbot certonly --standalone --non-interactive --agree-tos --quiet --no-eff-email --email "$EMAIL" -d "$FQDN" || FAILED=true
 
-  if [ -d "/etc/letsencrypt/live/$FQDN/" ] || [ "$FAILED" == false ]; then
-      print "The script was able to successfully generate the SSL certificate!"
-    else
-      print_warning "The script failed to generate the certificate, try to do it manually."
-  fi
+    if [ -d "/etc/letsencrypt/live/$FQDN/" ] || [ "$FAILED" == false ]; then
+        print "The script was able to successfully generate the SSL certificate!"
+      else
+        print_warning "The script failed to generate the certificate, try to do it manually."
+    fi
+  else
+    print "The script was able to successfully generate the SSL certificate!"
 fi
 }
 
@@ -514,7 +535,7 @@ apt-get update -y && apt-get upgrade -y
 [ "$OS_VER_MAJOR" == "18" ] && apt-add-repository universe
 
 # Install Dependencies
-apt-get install -y php8.0 php8.0-{cli,gd,mysql,pdo,mbstring,tokenizer,bcmath,xml,fpm,curl,zip,intl} mariadb-server nginx tar unzip git redis-server
+apt-get install -y php8.0 php8.0-{cli,gd,mysql,pdo,mbstring,tokenizer,bcmath,xml,fpm,curl,zip,intl} mariadb-server nginx tar unzip git redis-server psmisc net-tools
 
 # Enable services
 enable_services_debian_based
@@ -538,7 +559,7 @@ curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash
 apt-get update -y && apt-get upgrade -y
 
 # Install Dependencies
-apt-get install -y php8.0 php8.0-{cli,gd,mysql,pdo,mbstring,tokenizer,bcmath,xml,fpm,curl,zip,intl} mariadb-server nginx tar unzip git redis-server
+apt-get install -y php8.0 php8.0-{cli,gd,mysql,pdo,mbstring,tokenizer,bcmath,xml,fpm,curl,zip,intl} mariadb-server nginx tar unzip git redis-server psmisc net-tools
 
 # Enable services
 enable_services_debian_based
@@ -561,7 +582,7 @@ if [ "$OS_VER_MAJOR" == "7" ]; then
     yum-config-manager -y --enable remi-php80
 
     # Install dependencies
-    yum -y install php php-common php-tokenizer php-curl php-fpm php-cli php-json php-mysqlnd php-mcrypt php-gd php-mbstring php-pdo php-zip php-bcmath php-dom php-opcache php-intl mariadb-server nginx curl tar zip unzip git redis
+    yum -y install php php-common php-tokenizer php-curl php-fpm php-cli php-json php-mysqlnd php-mcrypt php-gd php-mbstring php-pdo php-zip php-bcmath php-dom php-opcache php-intl mariadb-server nginx curl tar zip unzip git redis psmisc net-tools
     yum update -y
   elif [ "$OS_VER_MAJOR" == "8" ]; then
     # SELinux tools
@@ -575,7 +596,7 @@ if [ "$OS_VER_MAJOR" == "7" ]; then
     yum install -y mariadb mariadb-server
 
     # Install dependencies
-    yum install -y php php-common php-fpm php-cli php-json php-mysqlnd php-gd php-mbstring php-pdo php-zip php-bcmath php-dom php-opcache php-intl mariadb-server nginx curl tar zip unzip git redis
+    yum install -y php php-common php-fpm php-cli php-json php-mysqlnd php-gd php-mbstring php-pdo php-zip php-bcmath php-dom php-opcache php-intl mariadb-server nginx curl tar zip unzip git redis psmisc net-tools
     yum update -y
 fi
 
@@ -620,21 +641,22 @@ bye
 main() {
 # Check if it is already installed and check the version #
 if [ -d "/var/www/controlpanel" ]; then
-    update_variables
-    if [ "$CLIENT_VERSION" != "$LATEST_VERSION" ]; then
+  update_variables
+  if [ "$CLIENT_VERSION" != "$LATEST_VERSION" ]; then
       print_warning "You already have the panel installed."
       echo -ne "* The script detected that the version of your panel is ${YELLOW}$CLIENT_VERSION${RESET}, the latest version of the panel is ${YELLOW}$LATEST_VERSION${RESET}, would you like to upgrade? (y/N): "
       read -r UPGRADE_PANEL
       if [[ "$UPGRADE_PANEL" =~ [Yy] ]]; then
+          check_distro
           only_upgrade_panel
         else
           print "Ok, bye..."
           exit 1
       fi
-      else
-        print_warning "The panel is already installed, aborting..."
-        exit 1
-    fi
+    else
+      print_warning "The panel is already installed, aborting..."
+      exit 1
+  fi
 fi
 
 # Check if pterodactyl is installed #
@@ -643,24 +665,15 @@ if [ ! -d "/var/www/pterodactyl" ]; then
   echo -ne "* Is your pterodactyl panel installed on this machine? (y/N): "
   read -r PTERO_DIR
   if [[ "$PTERO_DIR" =~ [Yy] ]]; then
-      echo -e "* ${GREEN}EXAMPLE${RESET}: /var/www/myptero"
-      echo -ne "* Enter the directory from where your pterodactyl panel is installed: "
-      read -r PTERO_DIR
-      if [ -f "$PTERO_DIR/config/app.php" ]; then
-          print "Pterodactyl was found, continuing..."
-        else
-          print_error "Pterodactyl not found, running script again..."
-          main
-      fi
-    else
-      echo -ne "* Please enter the domain name of your pterodactyl panel: "
-      read -r PTERO_DOMAIN
-      if curl -Is "$PTERO_DOMAIN" &>/dev/null; then
-          print "Your pterodactyl panel has been pinged successfully."
-        else
-          print_warning "Unable to ping your pterodactyl panel, make sure your domain is correct, and try again"
-          main
-      fi
+    echo -e "* ${GREEN}EXAMPLE${RESET}: /var/www/myptero"
+    echo -ne "* Enter the directory from where your pterodactyl panel is installed: "
+    read -r PTERO_DIR
+    if [ -f "$PTERO_DIR/config/app.php" ]; then
+        print "Pterodactyl was found, continuing..."
+      else
+        print_error "Pterodactyl not found, running script again..."
+        main
+    fi
   fi
 fi
 
@@ -671,11 +684,10 @@ check_distro
 check_compatibility
 
 # Set FQDN for panel #
-while [ -z "$FQDN" ] || [ "$FQDN" == "$PTERO_DOMAIN" ]; do
+while [ -z "$FQDN" ]; do
   echo -ne "* Set the Hostname/FQDN for panel (${YELLOW}panel.example.com${RESET}): "
   read -r FQDN
   [ -z "$FQDN" ] && print_error "FQDN cannot be empty"
-  [ "$FQDN" == "$PTERO_DOMAIN" ] && print_error "The domain of this panel cannot be the same as the pterodactyl panel"
 done
 
 # Install the packages to check FQDN and ask about SSL only if FQDN is a string #
