@@ -264,19 +264,6 @@ CHECK_DNS="$(dig +short @8.8.8.8 "$FQDN" | tail -n1)"
 if [ -z "$IP" ]; then
   IP="$(wget -qO- ifconfig.co/ip)"
 fi
-if curl -Is "$FQDN" &>/dev/null; then
-  FQDN=""
-  print_warning "It looks like the domain you entered is already being used by some other application."
-  while curl -Is "$FQDN" &>/dev/null || [ -z "$FQDN" ]; do
-    echo -n "* Enter another domain that is not in use: "
-    read -r FQDN
-    [ -z "$FQDN" ] && "FQDN cannot by empty!"
-    curl -Is "$FQDN" &>/dev/null && print_warning "Domain already in use!"
-  done
-  IP="$(curl -s https://ipecho.net/plain ; echo)"
-  CHECK_DNS="$(dig +short @8.8.8.8 "$FQDN" | tail -n1)"
-  if [ -z "$IP" ]; then IP="$(wget -qO- ifconfig.co/ip)"; fi
-fi
 if [[ "$IP" != "$CHECK_DNS" ]]; then
     print_error "Your FQDN (${YELLOW}$FQDN${RESET}) is not pointing to the public IP (${YELLOW}$IP${RESET}), please make sure your domain is set correctly."
     echo -n "* Would you like to check again? (y/N): "
@@ -685,6 +672,7 @@ check_compatibility
 
 # Set FQDN for panel #
 while [ -z "$FQDN" ]; do
+  print_warning "Do not use a domain that is already in use by another application, such as the domain of your pterodactyl."
   echo -ne "* Set the Hostname/FQDN for panel (${YELLOW}panel.example.com${RESET}): "
   read -r FQDN
   [ -z "$FQDN" ] && print_error "FQDN cannot be empty"
