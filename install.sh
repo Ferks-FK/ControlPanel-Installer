@@ -328,7 +328,7 @@ sed -i -e "s@<db_host>@$DB_HOST@g" /var/www/controlpanel/.env.example
 sed -i -e "s@<db_port>@$DB_PORT@g" /var/www/controlpanel/.env.example
 sed -i -e "s@<db_name>@$DB_NAME@g" /var/www/controlpanel/.env.example
 sed -i -e "s@<db_user>@$DB_USER@g" /var/www/controlpanel/.env.example
-sed -i -e "s@<db_pass>@$DB_PASS@g" /var/www/controlpanel/.env.example
+sed -i -e "s|<db_pass>|$DB_PASS|g" /var/www/controlpanel/.env.example
 }
 
 configure_database() {
