@@ -28,7 +28,8 @@ SUPPORT_LINK="https://discord.gg/buDBbSGJmQ"
 WIKI_LINK="https://github.com/Ferks-FK/ControlPanel-Installer/wiki"
 GITHUB_URL="https://raw.githubusercontent.com/Ferks-FK/ControlPanel.gg-Installer/$SCRIPT_RELEASE"
 RANDOM_PASSWORD="$(openssl rand -base64 32)"
-SETUP_MYSQL_MANUALLY=false
+MYSQL_PASSWORD=false
+INFORMATIONS="/var/log/ControlPanel-Info"
 FQDN=""
 
 update_variables() {
@@ -331,34 +332,62 @@ sed -i -e "s@<db_user>@$DB_USER@g" /var/www/controlpanel/.env.example
 sed -i -e "s|<db_pass>|$DB_PASS|g" /var/www/controlpanel/.env.example
 }
 
+check_database_info() {
+# Check if mysql has a password
+if ! mysql -u root -e "SHOW DATABASES;" &>/dev/null; then
+  MYSQL_PASSWORD=true
+  print_warning "It looks like your MySQL has a password, please enter it now"
+  password_input MYSQL_ROOT_PASS "MySQL Password: " "Password cannot by empty!"
+  if mysql -u root -p"$MYSQL_ROOT_PASS" -e "SHOW DATABASES;" &>/dev/null; then
+      print "The password is correct, continuing..."
+    else
+      print_warning "The password is not correct, please re-enter the password"
+      check_database_info
+  fi
+fi
+
+# Checks to see if the chosen user already exists
+if [ "$MYSQL_PASSWORD" == true ]; then
+    mysql -u root -p"$MYSQL_ROOT_PASS" -e "SELECT User FROM mysql.user;" 2>/dev/null >> "$INFORMATIONS/check_user.txt"
+  else
+    mysql -u root -e "SELECT User FROM mysql.user;" 2>/dev/null >> "$INFORMATIONS/check_user.txt"
+fi
+sed -i '1d' "$INFORMATIONS/check_user.txt"
+while grep -q "$DB_USER" "$INFORMATIONS/check_user.txt"; do
+  print_warning "Oops, it looks like user ${GREEN}$DB_USER${RESET} already exists in your MySQL, please use another one."
+  echo -n "* Database User: "
+  read -r DB_USER
+done
+rm -r "$INFORMATIONS/check_user.txt"
+
+# Check if the database already exists in mysql
+if [ "$MYSQL_PASSWORD" == true ]; then
+    mysql -u root -p"$MYSQL_ROOT_PASS" -e "SHOW DATABASES;" 2>/dev/null >> "$INFORMATIONS/check_db.txt"
+  else
+    mysql -u root -e "SHOW DATABASES;" 2>/dev/null >> "$INFORMATIONS/check_db.txt"
+fi
+sed -i '1d' "$INFORMATIONS/check_db.txt"
+while grep -q "$DB_USER" "$INFORMATIONS/check_db.txt"; do
+  print_warning "Oops, it looks like the database ${GREEN}$DB_NAME${RESET} already exists in your MySQL, please use another one."
+  echo -n "* Database Name: "
+  read -r DB_NAME
+done
+rm -r "$INFORMATIONS/check_db.txt"
+}
+
 configure_database() {
 print "Configuring Database..."
 
-if mysql -u root -e "show databases;" &>/dev/null; then
-    mysql -u root -e "CREATE DATABASE ${DB_NAME};"
-    mysql -u root -e "CREATE USER '${DB_USER}'@'${DB_HOST}' IDENTIFIED BY '${DB_PASS}';"
-    mysql -u root -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'${DB_HOST}';"
-    mysql -u root -e "FLUSH PRIVILEGES;"
+if [ "$MYSQL_PASSWORD" == true ]; then
+    mysql -u root -p"$MYSQL_ROOT_PASS" -e "CREATE DATABASE ${DB_NAME};" &>/dev/null
+    mysql -u root -p"$MYSQL_ROOT_PASS" -e "CREATE USER '${DB_USER}'@'${DB_HOST}' IDENTIFIED BY '${DB_PASS}';" &>/dev/null
+    mysql -u root -p"$MYSQL_ROOT_PASS" -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'${DB_HOST}';" &>/dev/null
+    mysql -u root -p"$MYSQL_ROOT_PASS" -e "FLUSH PRIVILEGES;" &>/dev/null
   else
-    print_warning "The database could not be configured, because apparently it has a password to access it."
-    echo -n "* Does your mysql have a password to be accessed? (y/N): "
-    read -r MYSQL_ROOT_PASS
-    if [[ "$MYSQL_ROOT_PASS" =~ [Yy] ]]; then
-        password_input MYSQL_ROOT_PASS "Enter your mysql password: " "Password cannot by empty!"
-        if mysql -u root -p"$MYSQL_ROOT_PASS" -e "show databases;" &>/dev/null; then
-            mysql -u root -p"$MYSQL_ROOT_PASS" -e "CREATE DATABASE ${DB_NAME};"
-            mysql -u root -p"$MYSQL_ROOT_PASS" -e "CREATE USER '${DB_USER}'@'${DB_HOST}' IDENTIFIED BY '${DB_PASS}';"
-            mysql -u root -p"$MYSQL_ROOT_PASS" -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'${DB_HOST}';"
-            mysql -u root -p"$MYSQL_ROOT_PASS" -e "FLUSH PRIVILEGES;"
-          else
-            print_warning "It looks like you got your mysql password wrong, try again..."
-            configure_database
-        fi
-      else
-        print_warning "The script was not able to configure your mysql, do this manually once the script has completed the installation."
-        SETUP_MYSQL_MANUALLY=true
-        sleep 3
-    fi
+    mysql -u root -e "CREATE DATABASE ${DB_NAME};" &>/dev/null
+    mysql -u root -e "CREATE USER '${DB_USER}'@'${DB_HOST}' IDENTIFIED BY '${DB_PASS}';" &>/dev/null
+    mysql -u root -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'${DB_HOST}';" &>/dev/null
+    mysql -u root -e "FLUSH PRIVILEGES;" &>/dev/null
 fi
 }
 
@@ -616,6 +645,7 @@ install_composer
 download_files
 set_permissions
 configure_environment
+check_database_info
 configure_database
 configure_firewall
 configure_crontab
@@ -740,7 +770,7 @@ echo
   echo -e "* Database Pass: $DB_PASS"
   echo ""
   echo "* After using this file, delete it immediately!"
-} >> /var/log/controlpanel.info
+} >> $INFORMATIONS/install.info
 
 # Confirm all the choices #
 echo -n "* Initial settings complete, do you want to continue to the installation? (y/N): "
@@ -757,13 +787,12 @@ echo -e "${GREEN}* The script has finished the installation process!${RESET}"
 
 [ "$CONFIGURE_SSL" == true ] && APP_URL="https://$FQDN"
 [ "$CONFIGURE_SSL" == false ] && APP_URL="http://$FQDN"
-[ "$SETUP_MYSQL_MANUALLY" == true ] && print_warning "Remember to manually configure your mysql by following this guide: ${YELLOW}$(hyperlink "https://controlpanel.gg/docs/Installation/getting-started#database-setup").${RESET}"
 
 echo -e "${GREEN}* To complete the configuration of your panel, go to ${YELLOW}$(hyperlink "$APP_URL/install")${RESET}"
 echo -e "${GREEN}* Thank you for using this script!"
 echo -e "* Wiki: ${YELLOW}$(hyperlink "$WIKI_LINK")${RESET}"
 echo -e "${GREEN}* Support Group: ${YELLOW}$(hyperlink "$SUPPORT_LINK")${RESET}"
-echo -e "${GREEN}*${RESET} If you have questions about the information that is requested on the installation page\nall the necessary information about it is written in: ($YELLOW/var/log/controlpanel.info$RESET)."
+echo -e "${GREEN}*${RESET} If you have questions about the information that is requested on the installation page\nall the necessary information about it is written in: (${YELLOW}$INFORMATIONS/install.info${RESET})."
 echo
 print_brake 90
 echo
