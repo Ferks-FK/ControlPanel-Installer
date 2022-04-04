@@ -367,7 +367,7 @@ if [ "$MYSQL_PASSWORD" == true ]; then
     mysql -u root -e "SHOW DATABASES;" 2>/dev/null >> "$INFORMATIONS/check_db.txt"
 fi
 sed -i '1d' "$INFORMATIONS/check_db.txt"
-while grep -q "$DB_USER" "$INFORMATIONS/check_db.txt"; do
+while grep -q "$DB_NAME" "$INFORMATIONS/check_db.txt"; do
   print_warning "Oops, it looks like the database ${GREEN}$DB_NAME${RESET} already exists in your MySQL, please use another one."
   echo -n "* Database Name: "
   read -r DB_NAME
@@ -384,10 +384,10 @@ if [ "$MYSQL_PASSWORD" == true ]; then
     mysql -u root -p"$MYSQL_ROOT_PASS" -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'${DB_HOST}';" &>/dev/null
     mysql -u root -p"$MYSQL_ROOT_PASS" -e "FLUSH PRIVILEGES;" &>/dev/null
   else
-    mysql -u root -e "CREATE DATABASE ${DB_NAME};" &>/dev/null
-    mysql -u root -e "CREATE USER '${DB_USER}'@'${DB_HOST}' IDENTIFIED BY '${DB_PASS}';" &>/dev/null
-    mysql -u root -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'${DB_HOST}';" &>/dev/null
-    mysql -u root -e "FLUSH PRIVILEGES;" &>/dev/null
+    mysql -u root -e "CREATE DATABASE ${DB_NAME};"
+    mysql -u root -e "CREATE USER '${DB_USER}'@'${DB_HOST}' IDENTIFIED BY '${DB_PASS}';"
+    mysql -u root -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'${DB_HOST}';"
+    mysql -u root -e "FLUSH PRIVILEGES;"
 fi
 }
 
