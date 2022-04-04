@@ -29,6 +29,7 @@ WIKI_LINK="https://github.com/Ferks-FK/ControlPanel-Installer/wiki"
 GITHUB_URL="https://raw.githubusercontent.com/Ferks-FK/ControlPanel.gg-Installer/$SCRIPT_RELEASE"
 RANDOM_PASSWORD="$(openssl rand -base64 32)"
 MYSQL_PASSWORD=false
+CONFIGURE_SSL=false
 INFORMATIONS="/var/log/ControlPanel-Info"
 FQDN=""
 
@@ -282,8 +283,6 @@ read -r CONFIGURE_SSL
 if [[ "$CONFIGURE_SSL" == [Yy] ]]; then
     CONFIGURE_SSL=true
     email_input EMAIL "Enter your email address to create the SSL certificate for your domain: " "Email cannot by empty or invalid!"
-  else
-    CONFIGURE_SSL=false
 fi
 }
 
@@ -760,6 +759,9 @@ echo
 print_brake 75
 echo
 
+# Create the logs directory #
+mkdir -p $INFORMATIONS
+
 # Write the information to a log #
 {
   echo -e "* Hostname/FQDN: $FQDN"
@@ -770,7 +772,7 @@ echo
   echo -e "* Database Pass: $DB_PASS"
   echo ""
   echo "* After using this file, delete it immediately!"
-} >> $INFORMATIONS/install.info
+} > $INFORMATIONS/install.info
 
 # Confirm all the choices #
 echo -n "* Initial settings complete, do you want to continue to the installation? (y/N): "
