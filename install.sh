@@ -226,6 +226,7 @@ case "$OS" in
       PHP_SOCKET="/run/php/php8.0-fpm.sock"
       [ "$OS_VER_MAJOR" == "18" ] && SUPPORTED=true
       [ "$OS_VER_MAJOR" == "20" ] && SUPPORTED=true
+      [ "$OS_VER_MAJOR" == "22" ] && SUPPORTED=true
     ;;
     centos)
       PHP_SOCKET="/var/run/php-fpm/controlpanel.sock"
@@ -540,7 +541,6 @@ apt-get install -y software-properties-common curl apt-transport-https ca-certif
 
 # Add additional repositories for PHP, Redis, and MariaDB
 LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php
-add-apt-repository -y ppa:chris-lea/redis-server
 curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash
 
 # Update repositories list
@@ -725,14 +725,14 @@ read -r DB_PORT
 [ -z "$DB_PORT" ] && DB_PORT="3306"
 
 # Set name of the database #
-echo -ne "* Enter the name of the database (${YELLOW}dashboard${RESET}): "
+echo -ne "* Enter the name of the database (${YELLOW}controlpanel${RESET}): "
 read -r DB_NAME
-[ -z "$DB_NAME" ] && DB_NAME="dashboard"
+[ -z "$DB_NAME" ] && DB_NAME="controlpanel"
 
 # Set user of the database #
-echo -ne "* Enter the username of the database (${YELLOW}dashboarduser${RESET}): "
+echo -ne "* Enter the username of the database (${YELLOW}controlpaneluser${RESET}): "
 read -r DB_USER
-[ -z "$DB_USER" ] && DB_USER="dashboarduser"
+[ -z "$DB_USER" ] && DB_USER="controlpaneluser"
 
 # Set pass of the database #
 password_input DB_PASS "Enter the password of the database (Enter for random password): " "Password cannot by empty!" "$RANDOM_PASSWORD"
