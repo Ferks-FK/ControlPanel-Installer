@@ -30,6 +30,7 @@ List of supported installation setups for panel (installations supported by this
 |                       | 11             | ✔️         |
 | Ubuntu                | 18             | ✔️         |
 |                       | 20             | ✔️         |
+|                       | 22             | ✔️         |
 | CentOS                | 7              | ✔️         |
 |                       | 8              | ✔️         |
 
