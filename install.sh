@@ -217,13 +217,13 @@ sleep 2
 
 case "$OS" in
     debian)
-      PHP_SOCKET="/run/php/php8.0-fpm.sock"
+      PHP_SOCKET="/run/php/php8.1-fpm.sock"
       [ "$OS_VER_MAJOR" == "9" ] && SUPPORTED=true
       [ "$OS_VER_MAJOR" == "10" ] && SUPPORTED=true
       [ "$OS_VER_MAJOR" == "11" ] && SUPPORTED=true
     ;;
     ubuntu)
-      PHP_SOCKET="/run/php/php8.0-fpm.sock"
+      PHP_SOCKET="/run/php/php8.1-fpm.sock"
       [ "$OS_VER_MAJOR" == "18" ] && SUPPORTED=true
       [ "$OS_VER_MAJOR" == "20" ] && SUPPORTED=true
       [ "$OS_VER_MAJOR" == "22" ] && SUPPORTED=true
@@ -550,7 +550,7 @@ apt-get update -y && apt-get upgrade -y
 [ "$OS_VER_MAJOR" == "18" ] && apt-add-repository universe
 
 # Install Dependencies
-apt-get install -y php8.0 php8.0-{cli,gd,mysql,pdo,mbstring,tokenizer,bcmath,xml,fpm,curl,zip,intl} mariadb-server nginx tar unzip git redis-server psmisc net-tools
+apt-get install -y php8.1 php8.1-{cli,gd,mysql,pdo,mbstring,tokenizer,bcmath,xml,fpm,curl,zip,intl} mariadb-server nginx tar unzip git redis-server psmisc net-tools
 
 # Enable services
 enable_services_debian_based
@@ -574,7 +574,7 @@ curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash
 apt-get update -y && apt-get upgrade -y
 
 # Install Dependencies
-apt-get install -y php8.0 php8.0-{cli,gd,mysql,pdo,mbstring,tokenizer,bcmath,xml,fpm,curl,zip,intl} mariadb-server nginx tar unzip git redis-server psmisc net-tools
+apt-get install -y php8.1 php8.1-{cli,gd,mysql,pdo,mbstring,tokenizer,bcmath,xml,fpm,curl,zip,intl} mariadb-server nginx tar unzip git redis-server psmisc net-tools
 
 # Enable services
 enable_services_debian_based
@@ -590,11 +590,11 @@ if [ "$OS_VER_MAJOR" == "7" ]; then
     # Install MariaDB
     curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash
 
-    # Add remi repo (php8.0)
+    # Add remi repo (php8.1)
     yum install -y epel-release http://rpms.remirepo.net/enterprise/remi-release-7.rpm
     yum install -y yum-utils
     yum-config-manager -y --disable remi-php54
-    yum-config-manager -y --enable remi-php80
+    yum-config-manager -y --enable remi-php81
 
     # Install dependencies
     yum -y install php php-common php-tokenizer php-curl php-fpm php-cli php-json php-mysqlnd php-mcrypt php-gd php-mbstring php-pdo php-zip php-bcmath php-dom php-opcache php-intl mariadb-server nginx curl tar zip unzip git redis psmisc net-tools
@@ -603,9 +603,9 @@ if [ "$OS_VER_MAJOR" == "7" ]; then
     # SELinux tools
     yum install -y policycoreutils selinux-policy selinux-policy-targeted setroubleshoot-server setools setools-console mcstrans
     
-    # Add remi repo (php8.0)
+    # Add remi repo (php8.1)
     yum install -y epel-release http://rpms.remirepo.net/enterprise/remi-release-8.rpm
-    yum module enable -y php:remi-8.0
+    yum module enable -y php:remi-8.1
 
     # Install MariaDB
     yum install -y mariadb mariadb-server
