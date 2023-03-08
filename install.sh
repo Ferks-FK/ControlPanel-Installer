@@ -24,7 +24,7 @@ curl --silent \
 
 # Variables #
 SCRIPT_RELEASE="$(get_release)"
-SUPPORT_LINK="https://discord.gg/buDBbSGJmQ"
+SUPPORT_LINK="https://discord.gg/jvbjX7CADm"
 WIKI_LINK="https://github.com/Ferks-FK/ControlPanel-Installer/wiki"
 GITHUB_URL="https://raw.githubusercontent.com/Ferks-FK/ControlPanel.gg-Installer/$SCRIPT_RELEASE"
 RANDOM_PASSWORD="$(openssl rand -base64 32)"
