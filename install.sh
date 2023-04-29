@@ -35,7 +35,7 @@ FQDN=""
 
 update_variables() {
 CLIENT_VERSION="$(grep "'version'" "/var/www/controlpanel/config/app.php" | cut -c18-25 | sed "s/[',]//g")"
-LATEST_VERSION="$(curl -s https://raw.githubusercontent.com/ControlPanel-gg/dashboard/main/config/app.php | grep "'version'" | cut -c18-25 | sed "s/[',]//g")"
+LATEST_VERSION="$(curl -s https://raw.githubusercontent.com/Ctrlpanel-gg/panel/main/config/app.php | grep "'version'" | cut -c18-25 | sed "s/[',]//g")"
 }
 
 # Visual Functions #
@@ -296,7 +296,7 @@ curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin
 download_files() {
 print "Downloading Necessary Files..."
 
-git clone -q https://github.com/ControlPanel-gg/dashboard.git /var/www/controlpanel
+git clone -q https://github.com/Ctrlpanel-gg/panel.git /var/www/controlpanel
 rm -rf /var/www/controlpanel/.env.example
 curl -so /var/www/controlpanel/.env.example "$GITHUB_URL"/configs/.env.example
 
