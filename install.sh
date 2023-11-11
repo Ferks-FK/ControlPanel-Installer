@@ -246,38 +246,6 @@ if [ "$SUPPORTED" == true ]; then
 fi
 }
 
-inicial_deps() {
-print "Downloading packages required for FQDN validation..."
-
-case "$OS" in
-  debian | ubuntu)
-    apt-get update -y &>/dev/null && apt-get install -y dnsutils wget &>/dev/null
-  ;;
-  centos)
-    yum update -y -q && yum install -y -q bind-utils wget
-  ;;
-esac
-}
-
-check_fqdn() {
-print "Checking FQDN..."
-sleep 2
-IP="$(curl -s https://ipecho.net/plain ; echo)"
-CHECK_DNS="$(dig +short @8.8.8.8 "$FQDN" | tail -n1)"
-if [ -z "$IP" ]; then
-  IP="$(wget -qO- ifconfig.co/ip)"
-fi
-if [[ "$IP" != "$CHECK_DNS" ]]; then
-    print_error "Your FQDN (${YELLOW}$FQDN${RESET}) is not pointing to the public IP (${YELLOW}$IP${RESET}), please make sure your domain is set correctly."
-    echo -n "* Would you like to check again? (y/N): "
-    read -r CHECK_DNS_AGAIN
-    [[ "$CHECK_DNS_AGAIN" =~ [Yy] ]] && check_fqdn
-    [[ "$CHECK_DNS_AGAIN" == [Nn] ]] && print_error "Installation aborted!" && exit 1
-  else
-    print_success "DNS successfully verified!"
-fi
-}
-
 ask_ssl() {
 echo -ne "* Would you like to configure ssl for your domain? (y/N): "
 read -r CONFIGURE_SSL
@@ -709,8 +677,6 @@ done
 
 # Install the packages to check FQDN and ask about SSL only if FQDN is a string #
 if [[ "$FQDN" == [a-zA-Z]* ]]; then
-  inicial_deps
-  check_fqdn
   ask_ssl
 fi
 
